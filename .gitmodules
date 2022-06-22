@@ -1,0 +1,3 @@
+[submodule "src/third_party/thread-pool"]
+	path = src/third_party/thread-pool
+	url = https://github.com/bshoshany/thread-pool.git
