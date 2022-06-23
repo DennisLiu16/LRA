@@ -1,6 +1,5 @@
 # ignore folder
 data
 build
-test/*
-# !test/*.cc
-# !test/*.c
+test/tmp/*
+

@@ -1,66 +1,74 @@
 #include <util/timer/timer.h>
 
 #include <sys/time.h>
+#include <assert.h>
 
 #include <array>
 #include <algorithm>
 #include <cmath>
 
-
+// TODO: include or not ?
 #include <util/log/log.h>
 
 namespace lra::timer_util {
 
 namespace chrono = std::chrono;
 
-explicit
+Timer::Timer() {
+  nanosleep_delay_us_ = static_cast<uint32_t>(Value::kDefaultDelay);
+
+  // open a thread for run (background)
+  std::function<void()> daemon = std::bind(&Timer::Run, this, std::thread::hardware_concurrency()/2);
+  std::thread t1(daemon);
+  t1.detach();
+}
+
 Timer::Timer
-(uint32_t thread_num = std::thread::hardware_concurrency()/2, DelayOpt opt = DelayOpt::kDefaultDelay) {
-  if(opt == DelayOpt::kDefaultDelay) { // set to 70 us
-    nanosleep_delay_us_ = 70;
+(uint32_t thread_num, DelayOpt opt = DelayOpt::kDefaultDelay) {
+  if(opt == DelayOpt::kDefaultDelay) {
+    nanosleep_delay_us_ = static_cast<uint32_t>(Value::kDefaultDelay);
   }
   
   if (nanosleep_delay_us_ == 0) { // get nanosleep average delay ~ thread::sleep_for
     nanosleep_delay_us_ = GetErrorOfNanosleep();
   }
 
-  Run(thread_num);
-
+  // open a thread for run (background)
+  std::function<void()> daemon = std::bind(&Timer::Run, this, thread_num);
+  std::thread t1(daemon);
+  t1.detach();
 }
 
 Timer::~Timer() {
-
+  run_flag_ = false;
+  while(!can_destroy_){;}
 }
 
-int Timer::SetEvent(std::function<void()> task, double duration_ms) {
-
-  // update push_flag_
-
-}
-
-int Timer::SetLoopEvent(std::function<void()> task, double period_ms) {
-  // TODO: warning: too short period might crush
-}
-
-bool Timer::CancelEvent(int uid) {
-  if(uid >= uid_for_next_event_) { //TODO: warning: uid not exists
-
-    return;
+// event will be removed at next pop
+bool Timer::CancelEvent(uint32_t uid) {
+  if(uid >= uid_for_next_event_) { 
+    //TODO: warning: uid not exists
+    return false;
   }
-  
-  RemoveFromVector(uid);
-  
+  bool ret = RemoveUid(uid);
+  if(!ret) {
+    //TODO: warning: this uid was already been removed
+  }
+  return ret;
 }
 
 // delete the timer instance
 void Timer::Delete() {
-  // stop the Timer
+  // stop subthread first, or can_destroy_ will lead segmentation fault
   run_flag_ = false;
-
-  Timer::~Timer();
+  while(!can_destroy_){}
 }
 
+// return interrupted or not
 bool Timer::PreciseSleepms(double ms, bool enable_interrupted_by_new_event = 0) {
+
+  if(ms < 0.0) return false;
+
   // critical value for raspberry 4b
   bool larger_than_7ms = (ms >= 7.0);
   static double mean, estimate = (larger_than_7ms)?5:0.5; mean = estimate;
@@ -77,92 +85,76 @@ bool Timer::PreciseSleepms(double ms, bool enable_interrupted_by_new_event = 0) 
     double observed = (end - start).count() / 1e6;  // to ms
     ms -= observed;
 
-    count++; // put here for below calculation
+    count++; // put here for below calculationf
 
     double delta = observed - mean;
     mean += delta / count;
     m2   += delta * (observed - mean);
     double stddev = sqrt(m2 / (count - 1));
     estimate = mean + X*stddev;
-    if(!(enable_interrupted_by_new_event && push_flag_))
+    if(enable_interrupted_by_new_event && push_flag_) { // leave because of interrupting
+      push_flag_ = false;
       return true;
+    }
   }
 
   // spin lock
   auto start = chrono::high_resolution_clock::now();
   while ((chrono::high_resolution_clock::now() - start).count() / 1e6 < ms) {
-    if(!(enable_interrupted_by_new_event && push_flag_))
+    if(enable_interrupted_by_new_event && push_flag_) {
+      push_flag_ = false;
       return true;
+    }
   };
   return false;
 }
 
 // private
 
-// create a bcakground thread to monitor event_vector_
+// create a bcakground thread to monitor event_queue_
 void Timer::Run(uint32_t thread_num) {
-  
   // make thread pool
   BS::thread_pool pool(thread_num);
 
   t_now_ = chrono::high_resolution_clock::now();
   
-
   // main
   while(run_flag_) {
     static double sleep_time_ms = 0.0;
-
-    if(event_vector_.empty()) { // if event_vector is empty, sleep 1 sec
-      sleep_time_ms = 1000.0;
+    
+    if(event_queue_.empty()) { // if event_queue_ is empty, sleep 1 sec
+      sleep_time_ms = static_cast<double>(Value::kIdleSleepMs);
     } else { // expired check(not empty), do task if poll ok, sort the events, calculate next closest interval
-      push_flag_ = false;
+     
       HandleExpiredEvents(pool);
-      double next_interval_ms = EvalNextInterval();
+      sleep_time_ms = EvalNextInterval(); // update t_now_ here too
       
-      sleep_time_ms = next_interval_ms;
     }
 
     PreciseSleepms(sleep_time_ms, true); // can be interrupted
-  }
-
-  // stop all running task in thread pool
-
-  // TODO: delete all TimerEvent in event_vector_
-}
-
-bool Timer::RemoveFromVector(int uid) {
-  // ignoring TimerEvent of uid is running in thread_pool_
-  // because the task will end up completation
-  
-  auto it = 
-    std::find_if(event_vector_.begin(), event_vector_.end()
-      ,[uid](TimerEvent& x){return x.uid == uid;});
-
-  if(it != event_vector_.end()) { //bingo, remove that TimerEvent
+    t_now_ = chrono::high_resolution_clock::now();
     
-    // note that if you need to delete mutiple task(maybe not unique)
-    // use remove_if not find_if instead
-
-    // store the TimerEvent for deleting
-    // TODO:must debug here, I think it's wrong
-    TimerEvent& event_will_be_removed = *it;
-    //erase from event_vector_
-    event_vector_.erase(it);
-    // delete the pointer point to TimerEvent
-    delete &event_will_be_removed;
-    //TODO: info: remove successfully
   }
 
-  //TODO: warning: Target TimerEvent has been deleted
+  can_destroy_ = true;
+
+}
+
+// From valid_uid_ remove target uid
+bool Timer::RemoveUid(uint32_t uid) {
+  // TODO: Add a mutex here to lock 
+  // uid in valid_uid_ 100% < uid_for_next_event_
+
+  // find and pop
+  auto it = std::find(valid_uid_.begin(), valid_uid_.end(), uid);
+  if(valid_uid_.end() == it) { // this uid was removed already
+    return false;
+  }
+
+  // TODO: add a mutex here
+  valid_uid_.erase(it);
+  return true;
   
-}
-
-void Timer::InsertIntoEventVector(TimerEvent& timer_event) {
-
-}
-
-TimerEvent& Timer::PopFrontFromEventVector() {
-
 }
 
 // use gettimeofday() to evaluate delay(us) in nanosleep
@@ -186,6 +178,7 @@ uint32_t Timer::GetErrorOfNanosleep() {
     int ret = nanosleep(&req, nullptr);
     if(-1 == ret) {
       //TODO:log nanosleep doesn't support
+      return static_cast<uint32_t>(Value::kDefaultDelay);
     }
     gettimeofday(&tval_end, nullptr);
     t_diff += (tval_end.tv_sec - tval_begin.tv_sec) * 1000000 
@@ -198,37 +191,31 @@ uint32_t Timer::GetErrorOfNanosleep() {
   return t_diff;
 }
 
-
 double Timer::GetErrorOfTimerMs(double duration_ms) {
   //TODO:shared_ptr?;
+  return 0.0;
 }
 
-// add a TimerEvent
-TimerEvent& Timer::CreateTimerEvent(std::function<void()> task, double period_ms) {
-  TimerEvent& ref = *(new TimerEvent);
-  ref.period_ms = period_ms;
-  ref.task = task;
+void Timer::HandleExpiredEvents(BS::thread_pool& pool) { // events should be well sorted in queue
 
-  // assign current time to t as birth time
-  ref.t = chrono::high_resolution_clock::now();
-  return ref;
-}
-
-void Timer::HandleExpiredEvents(BS::thread_pool& pool) { // events should be well sorted in vector
-
-  if(event_vector_.empty())
+  if(event_queue_.empty())
     return;
 
   static uint64_t overloading_count = 0;
 
-  // construct a tmp vector to store popped loop events
-  std::vector<std::reference_wrapper<TimerEvent>> popped_loop_events_vector;
-  int remaining_thread_num = pool.get_thread_count();
-  popped_loop_events_vector.reserve(( remaining_thread_num > 8) ? remaining_thread_num : 8 );  // set vecor's capacity at least 8
-  
-  for(auto& event; IsExpired(event) || IsNearExpired(event) ; ) { // deal with expired and near expired (< 10 us) events
-    // push back task to thread poll
-    // do task, insert into sorted vector, erase
+  // construct a tmp queue to store popped loop events
+  std::queue<TimerEvent> popped_loop_events_queue;
+
+  do { // assign expired tasks to thread pool, and store loop events to tmp queue
+    TimerEvent event = event_queue_.top();
+
+    if(!(IsNearExpired(event))) { // leave this loop when no event expired
+      break;
+    }
+
+    if(event.is_loop_event) {
+      popped_loop_events_queue.push(event);
+    }
 
     if(!HasIdleThread(pool)) { // overloading record
       overloading_count++;
@@ -237,31 +224,40 @@ void Timer::HandleExpiredEvents(BS::thread_pool& pool) { // events should be wel
       }
     }
 
-    TimerEvent& popped_event = PopFrontFromEventVector();
-
-    if(event.is_loop_event) {
-      // update t
-      popped_loop_events_vector.push_back(popped_event); 
+    // push_task to thread pool
+    if(IsValidUid(event.uid)) { // if event wasn't been canceled
+      pool.push_task(event.task);
     }
+    event_queue_.pop();
+  }while(!event_queue_.empty());
 
-    // notice bug in near_expired period < 10us
-      
+  t_now_ = chrono::high_resolution_clock::now();
 
+  // push tmp queue elements to event_queue_
+  while(!popped_loop_events_queue.empty()) {
+    // update time
+    TimerEvent event = popped_loop_events_queue.front();
+    event.t = chrono::high_resolution_clock::now();
+
+    event_queue_.push(event);
+    popped_loop_events_queue.pop();
   }
-
-  
-  InsertIntoEventVector
-
 }
 
 double Timer::EvalNextInterval() {
+  if(event_queue_.empty()) {
+    return static_cast<double>(Value::kIdleSleepMs);
+  }
 
+  auto event = event_queue_.top();
+  return EvalTimeDiffFromNow(event.t) - event.period_ms;
 }
 
-double Timer::EvalTimeDiffFromNow(chrono::system_clock::time_point t) {
-  t_now_ = chrono::high_resolution_clock::now();
+double Timer::EvalTimeDiffFromNow(chrono::system_clock::time_point& t) {
+  // TODO: maybe change to rdtsc?
+  // https://stackoverflow.com/questions/13772567/how-to-get-the-cpu-cycle-count-in-x86-64-from-c
+  t_now_ = chrono::high_resolution_clock::now(); 
   return (t_now_ - t).count() / 1e6;
 }
 
 };
-
