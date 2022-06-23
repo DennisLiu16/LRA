@@ -64,5 +64,6 @@
         "typeinfo": "cpp",
         "variant": "cpp",
         "*.ipp": "cpp"
-    }
+    },
+    "svg.preview.background": "custom"
 }

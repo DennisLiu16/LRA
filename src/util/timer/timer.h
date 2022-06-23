@@ -26,7 +26,7 @@ struct TimerEvent {
 
   bool operator<(const TimerEvent& rhs) const
   { // t + delta_t < rhs.t + rhs.delta_t --> (t-rhs.t) < rhs.delta_t - delta_t;
-    return (t - rhs.t).count()/1e6 < rhs.period_ms - period_ms;
+    return ((t - rhs.t).count()/1e6) < (rhs.period_ms - period_ms);
   }
 };
 

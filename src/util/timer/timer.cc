@@ -209,6 +209,11 @@ void Timer::HandleExpiredEvents(BS::thread_pool& pool) { // events should be wel
   do { // assign expired tasks to thread pool, and store loop events to tmp queue
     TimerEvent event = event_queue_.top();
 
+    if(!IsValidUid(event.uid)) { // top is not valid event anymore, pop
+      event_queue_.pop();
+      continue;
+    }
+
     if(!(IsNearExpired(event))) { // leave this loop when no event expired
       break;
     }
@@ -225,9 +230,8 @@ void Timer::HandleExpiredEvents(BS::thread_pool& pool) { // events should be wel
     }
 
     // push_task to thread pool
-    if(IsValidUid(event.uid)) { // if event wasn't been canceled
-      pool.push_task(event.task);
-    }
+    pool.push_task(event.task);
+
     event_queue_.pop();
   }while(!event_queue_.empty());
 
@@ -242,6 +246,7 @@ void Timer::HandleExpiredEvents(BS::thread_pool& pool) { // events should be wel
     event_queue_.push(event);
     popped_loop_events_queue.pop();
   }
+
 }
 
 double Timer::EvalNextInterval() {
@@ -250,13 +255,13 @@ double Timer::EvalNextInterval() {
   }
 
   auto event = event_queue_.top();
-  return EvalTimeDiffFromNow(event.t) - event.period_ms;
+  return event.period_ms - EvalTimeDiffFromNow(event.t);
 }
 
 double Timer::EvalTimeDiffFromNow(chrono::system_clock::time_point& t) {
   // TODO: maybe change to rdtsc?
   // https://stackoverflow.com/questions/13772567/how-to-get-the-cpu-cycle-count-in-x86-64-from-c
-  t_now_ = chrono::high_resolution_clock::now(); 
+  t_now_ = chrono::high_resolution_clock::now();
   return (t_now_ - t).count() / 1e6;
 }
 
