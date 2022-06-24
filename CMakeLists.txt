@@ -11,11 +11,12 @@ project(LRA LANGUAGES C CXX
         )
 
 # global var
+
 set(CMAKE_INCLUDE_PATH ${PROJECT_SOURCE_DIR}/src)
 ## debug usage ##
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
-set(CMAKE_BUILD_TYPE DEBUG)
-set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG")
+set(CMAKE_BUILD_TYPE DEBUG) # This should be specified by user, e.g. -DCMAKE_BUILD_TYPE=Release
+set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG -O3")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")  # O3 optimization
 set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG")
 
