@@ -47,27 +47,33 @@ class Timer {
     Timer(uint32_t thread_num, DelayOpt opt);
     ~Timer();
 
+    // template <typename F>
+    // uint32_t SetEvent(const F& task, double duration_ms) {
+
+    //   TimerEvent te = CreateTimerEvent(task, duration_ms);
+
+    //   event_queue_.push(te);
+    //   push_flag_ = true;
+
+    //   return te.uid;
+    // }
+
     template <typename F>
-    uint32_t SetEvent(const F& task, double duration_ms) {
-
-      TimerEvent te = CreateTimerEvent(task, duration_ms);
-
-      event_queue_.push(te);
-      push_flag_ = true;
-
-      return te.uid;
-    }
+    uint32_t SetEvent(const F& task, double duration_ms);
 
     template <typename F>
-    uint32_t SetLoopEvent(const F& task, double period_ms) {
+    uint32_t SetLoopEvent(const F& task, double period_ms);
 
-      TimerEvent te = CreateTimerEvent(task, period_ms);
-      te.is_loop_event = true;
+    // template <typename F>
+    // uint32_t SetLoopEvent(const F& task, double period_ms) {
 
-      event_queue_.push(te);
-      push_flag_ = true;
-      return te.uid;
-    }
+    //   TimerEvent te = CreateTimerEvent(task, period_ms);
+    //   te.is_loop_event = true;
+
+    //   event_queue_.push(te);
+    //   push_flag_ = true;
+    //   return te.uid;
+    // }
 
     bool CancelEvent(uint32_t uid);
 
@@ -100,20 +106,7 @@ class Timer {
 
     // template create a Timerevent and return
     template <typename F>
-    TimerEvent CreateTimerEvent(const F& task, double period_ms) {
-
-      // TODO: warning: too short period might crush
-
-      TimerEvent te;
-      te.is_loop_event = false;
-      te.period_ms = period_ms;
-      te.task = task;
-      // TODO: Add a mutex for valid_uid_
-      valid_uid_.push_back(uid_for_next_event_); // register uid
-      te.uid = uid_for_next_event_++; // increment 1 after assign to te.uid
-      te.t = std::chrono::high_resolution_clock::now();
-      return te;
-    }
+    TimerEvent CreateTimerEvent(const F& task, double period_ms);
 
     void HandleExpiredEvents(BS::thread_pool& pool);
     double EvalNextInterval();

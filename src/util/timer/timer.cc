@@ -44,6 +44,28 @@ Timer::~Timer() {
   while(!can_destroy_){;}
 }
 
+template <typename F>
+uint32_t Timer::SetEvent(const F& task, double duration_ms) {
+
+  TimerEvent te = CreateTimerEvent(task, duration_ms);
+
+  event_queue_.push(te);
+  push_flag_ = true;
+
+  return te.uid;
+}
+
+template <typename F>
+uint32_t Timer::SetLoopEvent(const F& task, double period_ms) {
+
+  TimerEvent te = CreateTimerEvent(task, period_ms);
+  te.is_loop_event = true;
+
+  event_queue_.push(te);
+  push_flag_ = true;
+  return te.uid;
+}
+
 // event will be removed at next pop
 bool Timer::CancelEvent(uint32_t uid) {
   if(uid >= uid_for_next_event_) { 
@@ -137,6 +159,22 @@ void Timer::Run(uint32_t thread_num) {
 
   can_destroy_ = true;
 
+}
+
+template <typename F>
+TimerEvent Timer::CreateTimerEvent(const F& task, double period_ms) {
+
+  // TODO: warning: too short period might crush
+
+  TimerEvent te;
+  te.is_loop_event = false;
+  te.period_ms = period_ms;
+  te.task = task;
+  // TODO: Add a mutex for valid_uid_
+  valid_uid_.push_back(uid_for_next_event_); // register uid
+  te.uid = uid_for_next_event_++; // increment 1 after assign to te.uid
+  te.t = std::chrono::high_resolution_clock::now();
+  return te;
 }
 
 // From valid_uid_ remove target uid
@@ -264,4 +302,14 @@ double Timer::EvalTimeDiffFromNow(chrono::system_clock::time_point& t) {
   return (t_now_ - t).count() / 1e6;
 }
 
+
+// you should notice that
+// - no const keyword
+// - if you don't know how to write, compiler will tell you
+// undefined reference to `unsigned int lra::timer_util::Timer::SetLoopEvent<void ()>(void ( const&)(), double)'
+// --> template uint32_t Timer::SetLoopEvent<void ()>(void(&task)(), double);
+template uint32_t Timer::SetEvent<void ()>(void (&task)(), double);
+template uint32_t Timer::SetLoopEvent<void ()>(void(&task)(), double);
+template TimerEvent Timer::CreateTimerEvent<void ()>(void(&task)(), double);
 };
+

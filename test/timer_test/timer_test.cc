@@ -45,11 +45,12 @@ int main() {
   std::cout << "Cancel completed" << std::endl;
 
   unique_uid = my_timer.SetLoopEvent(EasyPrint3, nb);
+  double total = 0.0;
+  int count = 0;
   
+
   auto start = std::chrono::high_resolution_clock::now();
-  // usleep(1000000);
-  my_timer.PreciseSleepms(total_time_ms, 0);
+  // my_timer.PreciseSleepms(total_time_ms, 0);
+    my_timer.PreciseSleepms(100000, 0);
   auto end = std::chrono::high_resolution_clock::now();
-  
-  printf("precise timer : %.3f ms\n", (end-start).count()/1e6);
 }
