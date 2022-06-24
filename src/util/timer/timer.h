@@ -7,7 +7,7 @@
 #include <chrono>
 #include <functional>
 #include <queue>
-#include <iostream>
+
 
 
 #include <third_party/thread-pool/BS_thread_pool.hpp>
@@ -26,7 +26,10 @@ struct TimerEvent {
 
   bool operator<(const TimerEvent& rhs) const
   { // t + delta_t < rhs.t + rhs.delta_t --> (t-rhs.t) < rhs.delta_t - delta_t;
-    return ((t - rhs.t).count()/1e6) < (rhs.period_ms - period_ms);
+    // note that the priority queue order from larger to smaller 
+    // so we reverse to (t-rhs.t) > rhs.delta_t - delta_t;
+    // make high freq tasks high priority
+    return ((t - rhs.t).count()/1e6) > (rhs.period_ms - period_ms);
   }
 };
 

@@ -133,7 +133,6 @@ void Timer::Run(uint32_t thread_num) {
 
     PreciseSleepms(sleep_time_ms, true); // can be interrupted
     t_now_ = chrono::high_resolution_clock::now();
-    
   }
 
   can_destroy_ = true;
