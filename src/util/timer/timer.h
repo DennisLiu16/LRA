@@ -33,47 +33,36 @@ struct TimerEvent {
   }
 };
 
+
+// Movable but not copyable class
+// Can do precise sleep and schedule task by 
 class Timer {
   public:
-
-    // TODO: copy constructor
 
     // enum of init args
     enum class DelayOpt {kMeasureDelay, kDefaultDelay};
     enum class Value {kDefaultDelay = 70, kIdleSleepMs = 1000};
 
-    // operator
+    // constructor
     Timer();
-    Timer(uint32_t thread_num, DelayOpt opt);
+    explicit Timer(uint32_t thread_num, DelayOpt opt);
+    Timer(Timer&& movable_timer) = default;
+    Timer(const Timer& copyable_timer) = delete;
+
+    // assign operator
+    Timer& operator=(Timer&& movable_timer) = default;
+    Timer& operator=(const Timer& copyable_timer) = delete; 
+
+    // destructor
     ~Timer();
 
-    // template <typename F>
-    // uint32_t SetEvent(const F& task, double duration_ms) {
-
-    //   TimerEvent te = CreateTimerEvent(task, duration_ms);
-
-    //   event_queue_.push(te);
-    //   push_flag_ = true;
-
-    //   return te.uid;
-    // }
+    
 
     template <typename F>
     uint32_t SetEvent(const F& task, double duration_ms);
 
     template <typename F>
     uint32_t SetLoopEvent(const F& task, double period_ms);
-
-    // template <typename F>
-    // uint32_t SetLoopEvent(const F& task, double period_ms) {
-
-    //   TimerEvent te = CreateTimerEvent(task, period_ms);
-    //   te.is_loop_event = true;
-
-    //   event_queue_.push(te);
-    //   push_flag_ = true;
-    //   return te.uid;
-    // }
 
     bool CancelEvent(uint32_t uid);
 

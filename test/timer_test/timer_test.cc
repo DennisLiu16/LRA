@@ -33,8 +33,6 @@ void EasyPrint3() {
     printf("%.2f % reached\n", pa_v*100);
 }
 
-
-
 int main() {
   lra::timer_util::Timer my_timer;
   std::cout << "Create Timer" << std::endl;
