@@ -35,7 +35,7 @@ void EasyPrint3() {
 
 int main() {
   lra::timer_util::Timer my_timer;
-  std::cout << "Create Timer" << std::endl;
+  std::cout << "Create Timer" << typeid(my_timer).name() << std::endl;
 
   unique_uid = my_timer.SetLoopEvent(EasyPrint,100.0);
   my_timer.SetLoopEvent(EasyPrint2,nb);

@@ -1,21 +1,11 @@
 #ifndef LRA_UTIL_TIMER_H_
 #define LRA_UTIL_TIMER_H_
 
-#include <time.h>
-
-#include <algorithm>
-#include <chrono>
-#include <functional>
-#include <queue>
-
-
-
-#include <third_party/thread-pool/BS_thread_pool.hpp>
+#include <thread-pool/BS_thread_pool.hpp>
 
 namespace lra::timer_util{
 
 // namespace of util/timer
-// you should use -O3 to optimize algorithm
 
 struct TimerEvent {
   bool is_loop_event;

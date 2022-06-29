@@ -1,11 +1,14 @@
 #include <util/timer/timer.h>
 
 #include <sys/time.h>
-#include <assert.h>
 
-#include <array>
-#include <algorithm>
+// #include <array>
+// #include <algorithm>
+// #include <chrono>
 #include <cmath>
+// #include <functional>
+// #include <queue>
+
 
 // TODO: include or not ?
 #include <util/log/log.h>
@@ -100,6 +103,10 @@ bool Timer::PreciseSleepms(double ms, bool enable_interrupted_by_new_event = 0) 
   double X = (larger_than_7ms) ? 1 : 2;
 
   while(ms > estimate) { // thread sleep
+    if(enable_interrupted_by_new_event && push_flag_) { // leave because of event push interrupting
+      push_flag_ = false;
+      return true;
+    }
     auto start = chrono::high_resolution_clock::now();
     std::this_thread::sleep_for(sleep_period);
     auto end = chrono::high_resolution_clock::now();
@@ -114,10 +121,7 @@ bool Timer::PreciseSleepms(double ms, bool enable_interrupted_by_new_event = 0) 
     m2   += delta * (observed - mean);
     double stddev = sqrt(m2 / (count - 1));
     estimate = mean + X*stddev;
-    if(enable_interrupted_by_new_event && push_flag_) { // leave because of interrupting
-      push_flag_ = false;
-      return true;
-    }
+
   }
 
   // spin lock
@@ -306,7 +310,7 @@ double Timer::EvalTimeDiffFromNow(chrono::system_clock::time_point& t) {
 // you should notice that
 // - no const keyword
 // - if you don't know how to write, compiler will tell you
-// undefined reference to `unsigned int lra::timer_util::Timer::SetLoopEvent<void ()>(void ( const&)(), double)'
+// e.g. undefined reference to `unsigned int lra::timer_util::Timer::SetLoopEvent<void ()>(void ( const&)(), double)'
 // --> template uint32_t Timer::SetLoopEvent<void ()>(void(&task)(), double);
 template uint32_t Timer::SetEvent<void ()>(void (&task)(), double);
 template uint32_t Timer::SetLoopEvent<void ()>(void(&task)(), double);
