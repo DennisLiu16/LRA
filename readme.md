@@ -10,3 +10,4 @@
 
 ## Third-Party Libraries
 - [BS thread-pool](https://github.com/bshoshany/thread-pool)
+- [spdlog](https://github.com/gabime/spdlog)
