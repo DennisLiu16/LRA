@@ -65,5 +65,76 @@
         "variant": "cpp",
         "*.ipp": "cpp"
     },
-    "svg.preview.background": "custom"
+    "svg.preview.background": "custom",
+
+
+    // log file color related setting
+    "editor.tokenColorCustomizations": {
+        "textMateRules": [
+            {
+                "scope": "log.error",
+                "settings": {
+                    "foreground": "#FF3333",
+                    "fontStyle": "bold"
+                }
+            },
+            {
+                "scope": "log.warning",
+                "settings": {
+                    "foreground": "#f4ad42",
+                    "fontStyle": "bold"
+                }
+            },
+            {
+                "scope": "log.info",
+                "settings": {
+                    "foreground": "#338FFF",
+                    "fontStyle": "bold"
+                }
+            },
+            {
+                "scope": "log.date",
+                "settings": {
+                    "foreground": "#33FFCB",
+                    "fontStyle": "bold"
+                }
+            }
+        ]
+    },
+
+    // custom
+    "logFileHighlighter.customPatterns": [
+        {
+            "pattern": "\\[critical\\]",
+            "foreground": "#F133FF",
+            "fontWeight": "bold"
+
+        },
+        {
+            "pattern": "\\[error\\]",
+            "foreground": "#FF3333",
+            "fontWeight": "bold"
+
+        },
+        {
+            "pattern": "\\[warn\\]",
+            "foreground": "#f4ad42",
+            "fontWeight": "bold",
+        },
+        {
+            "pattern": "\\[info\\]",
+            "foreground": "#338FFF",
+            "fontWeight": "bold",
+        },
+        {
+            "pattern": "(\\[debug\\])",
+            "foreground": "#FAFF33",
+            "fontWeight": "bold",
+        },
+        {
+            "pattern": "\\[trace\\]",
+            "foreground": "#33FF47",
+            "fontWeight": "bold",
+        },
+    ]
 }
