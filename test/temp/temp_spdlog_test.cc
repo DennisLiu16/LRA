@@ -1,5 +1,6 @@
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 // define macro here to test
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 
@@ -29,7 +30,7 @@ void GenerateLoggerInFunction() {
 void PrintAllLogger() {
   static std::set<std::string> myset;
   static uint32_t num = 0;
-  spdlog::apply_all([&](std::shared_ptr<spdlog::logger> l) { myset.insert(l->name()); num++;});
+  spdlog::apply_all([&](std::shared_ptr<spdlog::logger> l) { myset.insert(l->name()); num++; });
 
   // print all
   spdlog::fmt_lib::print("All logger --\n");
