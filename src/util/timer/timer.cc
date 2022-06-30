@@ -9,9 +9,10 @@
 // #include <functional>
 // #include <queue>
 
+#include <util/log/log.h>
 
 // TODO: include or not ?
-#include <util/log/log.h>
+
 
 namespace lra::timer_util {
 
