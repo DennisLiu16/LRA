@@ -63,7 +63,10 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "charconv": "cpp",
+        "regex": "cpp",
+        "shared_mutex": "cpp"
     },
     "svg.preview.background": "custom",
 
@@ -136,5 +139,7 @@
             "foreground": "#33FF47",
             "fontWeight": "bold",
         },
-    ]
+    ],
+
+    "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 2, ColumnLimit: 0}"
 }
