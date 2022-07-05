@@ -33,6 +33,8 @@ class Timer {
   enum class Value { kDefaultDelay = 70,
                      kIdleSleepMs = 1000 };
 
+  std::shared_ptr<lra_log_util::LogUnit> logunit;
+
   // constructor
   Timer();
   explicit Timer(uint32_t thread_num, DelayOpt opt);

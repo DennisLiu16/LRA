@@ -43,7 +43,6 @@ void PrintAllLogger() {
 int main() {
   spdlog::basic_logger_mt("main_basic_logger", file_for_main);
   GenerateLoggerInFunction();
-
   // get all registered logger
   PrintAllLogger();
 
