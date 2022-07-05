@@ -1,6 +1,7 @@
 #ifndef LRA_UTIL_TIMER_H_
 #define LRA_UTIL_TIMER_H_
 
+#include <util/log/log.h>
 #include <thread-pool/BS_thread_pool.hpp>
 
 namespace lra::timer_util {

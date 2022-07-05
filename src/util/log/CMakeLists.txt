@@ -27,6 +27,12 @@ if(USE_LOG_SYSTEM)
   target_compile_definitions(lra_log_util PUBLIC USE_LOG_SYSTEM)
 
   # Select SPDLOG_LEVEL
+  set(BaseName "trace" CACHE STRING
+  "BaseName chosen by the user at CMake configure time")
+
+  set_property(CACHE BaseName PROPERTY STRINGS trace debug info warn error critical)
+
+  message(STATUS "BaseName='${BaseName}'")
 
   # aborted
   # if(USE_SPDLOG)
@@ -43,9 +49,8 @@ else()
   # define nothing
 endif()
 
-target_link_libraries(lra_log_util spdlog)
-target_include_directories(lra_log_util PRIVATE ${SRC_INCLUDE_PATH})
-# target_compile_features(lra_log_util PRIVATE cxx_std_20)
+target_link_libraries(lra_log_util PUBLIC spdlog)
+target_include_directories(lra_log_util PUBLIC ${SRC_INCLUDE_PATH} ${THIRD_PARTY_INCLUDE_PATH})
 
 # 可以用 cmake -LH 查看 options 也可以透過 tab 看 -D flag
 # TODO:https://runebook.dev/zh-CN/docs/cmake/command/target_precompile_headers precompile
