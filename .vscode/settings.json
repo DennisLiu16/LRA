@@ -66,7 +66,8 @@
         "*.ipp": "cpp",
         "charconv": "cpp",
         "regex": "cpp",
-        "shared_mutex": "cpp"
+        "shared_mutex": "cpp",
+        "unordered_set": "cpp"
     },
     "svg.preview.background": "custom",
 
@@ -141,5 +142,5 @@
         },
     ],
 
-    "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 2, ColumnLimit: 0}"
+    "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 2, ColumnLimit: 100}"
 }

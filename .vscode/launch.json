@@ -8,7 +8,7 @@
             "name": "Normal test",
             "type": "cppdbg",
             "request": "launch",
-            "program": "/home/ubuntu/LRA/build/test/timer_test/lra_timer_util_test",
+            "program": "/home/ubuntu/LRA/build/test/log_test/lra_log_util_test",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
