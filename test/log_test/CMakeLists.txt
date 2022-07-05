@@ -1,0 +1,4 @@
+add_executable(lra_log_util_test log_test.cc)
+
+target_include_directories(lra_log_util_test PRIVATE lra_log_util)
+target_link_libraries(lra_log_util_test PRIVATE lra_log_util)
