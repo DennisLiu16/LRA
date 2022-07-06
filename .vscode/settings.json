@@ -67,7 +67,13 @@
         "charconv": "cpp",
         "regex": "cpp",
         "shared_mutex": "cpp",
-        "unordered_set": "cpp"
+        "unordered_set": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "source_location": "cpp",
+        "numbers": "cpp",
+        "semaphore": "cpp",
+        "stop_token": "cpp"
     },
     "svg.preview.background": "custom",
 
@@ -142,5 +148,5 @@
         },
     ],
 
-    "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 2, ColumnLimit: 100}"
+    "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 2, ColumnLimit: 150}"
 }
