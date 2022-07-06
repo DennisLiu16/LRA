@@ -14,7 +14,6 @@
 
 #pragma message("Log system enable: use spdlog")
 
-
 #else
 #pragma message("Log system disable")
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_OFF
@@ -23,22 +22,21 @@
 #include <spdlog/spdlog.h>
 
 #include <boost/core/demangle.hpp>
+#include <experimental/source_location>
+#include <iostream>
+#include <tuple>
+// #include <source_location>  // require g++-11
 #include <typeinfo>
 #include <unordered_map>
 #include <unordered_set>
-#include <iostream>
 
 namespace lra_log_util {
 
 class LogUnit {
  public:
-  inline static std::unordered_map<std::string, std::shared_ptr<LogUnit>> logunits_{};
-
-  // LogManager::RegisterLogUnit(getName()); the
-  // name is unique so no need to set string;
   inline std::string getName() { return name_; }
 
-  LogUnit(auto &obj) {
+  LogUnit(auto &obj) {  // input should be *this, an instance or nullptr
     // get name
     std::string class_name;
     if (!obj) {
@@ -56,57 +54,82 @@ class LogUnit {
   static std::shared_ptr<LogUnit> CreateLogUnit(auto obj) {
     auto ptr = std::make_shared<LogUnit>(obj);
     Register(ptr);
-    return std::move(ptr);
+    return ptr;
   }
 
   static std::shared_ptr<LogUnit> CreateLogUnit() { return CreateLogUnit(nullptr); }
-  static bool IsRegistered(std::string logunit_name);
 
-  void AddLogger(std::string logger_name);
-  void RemoveLogger(std::string logger_name);
+  static bool IsRegistered(const std::string &logunit_name);
+  static std::vector<std::string> getAllKeys();
+
+  static auto getLogUnitPtr(const std::string &logunit_name) {
+    return (IsRegistered(logunit_name)) ? logunits_[logunit_name] : nullptr;
+  }
+
+  void AddLogger(const std::string &logger_name);
+  void RemoveLogger(const std::string &logger_name);
   void Drop();
 
+  // // deduction guide - failed
+  // template <typename... Args>
+  // struct Log {
+  //   Log(spdlog::level::level_enum level, Args &&...args,
+  //       const std::experimental::source_location &loc = std::experimental::source_location::current()) {
+  //     if (SPDLOG_ACTIVE_LEVEL > level) {
+  //       return;
+  //     }
 
+  //     for (const auto &logger : loggers_) {  // string type
+  //       if (std::shared_ptr<spdlog::logger> log_ptr = spdlog::get(logger); log_ptr != nullptr) {
+  //         (log_ptr)->log(spdlog::source_loc{loc.file_name(), loc.line(), loc.function_name()}, level, std::forward<Args>(args)...);
+  //       } else {
+  //         loggers_.erase(logger);
+  //       }
+  //     }
+  //   }
+  // };
+
+  // // ref:
+  // // https://cor3ntin.github.io/posts/variadic/
+  // // https://stackoverflow.com/questions/57547273/how-to-use-source-location-in-a-variadic-template-function/57548488#57548488
+  // // Deduction guide
+  // template <typename... Args>
+  // Log(spdlog::level::level_enum level, Args &&...) -> Log<Args...>;
+
+
+  // example:
+  // logunit->Log(std::make_tuple("msg id {}", 42), spdlog::level::error)
+  // you should check SPDLOG_ACTIVE_LEVEL by CMakeLists
+  // you can also set logger properties before RegisterLogger
   template <typename... Args>
-  void Log(int level, Args &&...args) {
+  void Log(std::tuple<Args...> tuple, const spdlog::level::level_enum &level,
+           const std::experimental::source_location &loc = std::experimental::source_location::current()) {
+    if (SPDLOG_ACTIVE_LEVEL > level) {
+      return;
+    }
 
-    // level check
-    if(!(SPDLOG_ACTIVE_LEVEL > level)) {return;}
-
-    for (const auto &logger : loggers_) { // string type
+    for (const auto &logger : loggers_) {  // string type
       if (std::shared_ptr<spdlog::logger> log_ptr = spdlog::get(logger); log_ptr != nullptr) {
-        switch (level) {
-          case spdlog::level::trace:
-            SPDLOG_LOGGER_TRACE(log_ptr, std::forward<Args>(args)...);
-            break;
-          case spdlog::level::debug:
-            SPDLOG_LOGGER_DEBUG(log_ptr, std::forward<Args>(args)...);
-            break;
-          case spdlog::level::info:
-            SPDLOG_LOGGER_INFO(log_ptr, std::forward<Args>(args)...);
-            break;
-          case spdlog::level::warn:
-            SPDLOG_LOGGER_WARN(log_ptr, std::forward<Args>(args)...);
-            break;
-          case spdlog::level::err:
-            SPDLOG_LOGGER_ERROR(log_ptr, std::forward<Args>(args)...);
-            break;
-          case spdlog::level::critical:
-            SPDLOG_LOGGER_CRITICAL(log_ptr, std::forward<Args>(args)...);
-            break;
-        }
-      } else {  // remove logger because it's not valid anymore
+        std::apply([&](auto &&... args) { _CallSpdlog(log_ptr, level, loc, args...); }, tuple);
+      } else {
         loggers_.erase(logger);
       }
     }
   }
 
  private:
-  static uint32_t idx_for_next_; // not static inline
+  template <typename... Args>
+  void _CallSpdlog(const std::shared_ptr<spdlog::logger> &log_ptr, const spdlog::level::level_enum &level,
+                   const std::experimental::source_location &loc, Args &&...args) {
+                    (log_ptr)->log(spdlog::source_loc{loc.file_name(), loc.line(), loc.function_name()}, level, std::forward<Args>(args)...);
+                   }
+
+  static uint32_t idx_for_next_;  // not static inlineD
 
   std::string name_;                         // unique LogUnit name
   std::unordered_set<std::string> loggers_;  // use string instead of spdlog::logger for
                                              // shared_ptr drop problem
+  static std::unordered_map<std::string, std::shared_ptr<LogUnit>> logunits_;
 
   static void Register(std::shared_ptr<LogUnit> ptr);
 };

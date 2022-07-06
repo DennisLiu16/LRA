@@ -6,16 +6,24 @@ namespace lra_log_util {
 // public
 LogUnit::~LogUnit() {}
 
-void LogUnit::AddLogger(std::string logger_name) {  // move copy value to unordered set directly
-  loggers_.insert(std::move(logger_name));
+void LogUnit::AddLogger(const std::string &logger_name) {  // move copy value to unordered set directly
+  loggers_.insert(logger_name);
 }
 
-void LogUnit::RemoveLogger(std::string logger_name) {  // move copy value to unordered set directly
-  loggers_.erase(std::move(logger_name));
+void LogUnit::RemoveLogger(const std::string &logger_name) {  // move copy value to unordered set directly
+  loggers_.erase(logger_name);
 }
 
-bool LogUnit::IsRegistered(std::string logunit_name) {
-  return logunits_.count(std::move(logunit_name));
+bool LogUnit::IsRegistered(const std::string &logunit_name) {
+  return logunits_.count(logunit_name);
+}
+
+std::vector<std::string> LogUnit::getAllKeys() {
+  std::vector<std::string> vec{};
+  for(auto map: logunits_) {
+    vec.push_back(map.first);
+  }
+  return vec;
 }
 
 // private
@@ -32,5 +40,6 @@ void LogUnit::Drop() {  // should use when shared_ptr.use_count() == 1, so Drop-
 
 // static variable init
 uint32_t LogUnit::idx_for_next_ = 0;
+std::unordered_map<std::string, std::shared_ptr<LogUnit>> LogUnit::logunits_{};
 
 }  // namespace lra_log_util

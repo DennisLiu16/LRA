@@ -1,8 +1,10 @@
 # The first target makefile of LRA project
 cmake_minimum_required(VERSION 3.22)
 
-set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
-set(CMAKE_C_COMPILER "/usr/bin/clang")
+# set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+# set(CMAKE_C_COMPILER "/usr/bin/clang")
+set(CMAKE_CXX_COMPILER "/usr/bin/g++")
+set(CMAKE_C_COMPILER "/usr/bin/gcc")
 
 
 project(LRA LANGUAGES C CXX
@@ -31,7 +33,7 @@ set(CMAKE_CXX_FLAGS "-Wall")
 
 # CXX compiler DEBUG parameters
 # if without flag -fPIC, spdlog will be compiled without -fPIC while src/* will be compiled with -fPIC -> link failed
-set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG -O0 -ftime-trace -fPIC")  
+set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG -O0 -fPIC")  
 
 # CXX compiler RELEASE parameters
 set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3 -fPIC")  # O3 optimization, close assert by define NDEBUG

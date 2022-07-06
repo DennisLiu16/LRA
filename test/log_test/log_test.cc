@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/sinks/basic_file_sink.h>
 
 std::string ptr2_name;
 
@@ -14,21 +15,27 @@ void func() {
 }
 
 int main() {
-  int a;
   std::shared_ptr<lra_log_util::LogUnit> ptr = lra_log_util::LogUnit::CreateLogUnit();
   func();
 
   // TODO: 把 logunits 放到 private 建立 interface
-  if(lra_log_util::LogUnit::logunits_.count(ptr2_name))
-    spdlog::fmt_lib::print("{}\n", (lra_log_util::LogUnit::logunits_[ptr2_name].use_count()));
-  for (auto k : lra_log_util::LogUnit::logunits_) {
-    std::cout << k.first << " " << k.second.use_count() << std::endl;
-  }
+  if(auto ptr2_ = lra_log_util::LogUnit::getLogUnitPtr(ptr2_name); ptr2_ != nullptr)
+    spdlog::fmt_lib::print("{}\n", ptr2_.use_count());  
 
-  spdlog::stdout_color_mt("console");
+  auto my_logger = spdlog::basic_logger_mt("console", "/home/ubuntu/LRA/data/log/log_test.log");
+  my_logger->set_level(spdlog::level::err);
+  //spdlog::stdout_color_mt("console");
 
   ptr->AddLogger("console");
-  ptr->Log(spdlog::level::err, "test");
-  ptr->Log(spdlog::level::err, "test");
+  int i,j = 0;
+  while(i++ < 4000) {
+    ptr->Log(std::make_tuple("test"), spdlog::level::err);
+  }
+
+  spdlog::set_default_logger(spdlog::get("console"));
+
+  while(j++ < 4000) {
+    spdlog::error("test");
+  }
 
 }

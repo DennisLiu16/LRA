@@ -51,6 +51,7 @@ endif()
 
 target_link_libraries(lra_log_util PUBLIC spdlog)
 target_include_directories(lra_log_util PUBLIC ${SRC_INCLUDE_PATH} ${THIRD_PARTY_INCLUDE_PATH})
+target_compile_options(lra_log_util PUBLIC "-fpermissive")
 
 # 可以用 cmake -LH 查看 options 也可以透過 tab 看 -D flag
 # TODO:https://runebook.dev/zh-CN/docs/cmake/command/target_precompile_headers precompile
