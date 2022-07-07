@@ -23,6 +23,7 @@ set_property(CACHE SPDLOG_LEVEL PROPERTY STRINGS ${SPDLOG_LEVEL_OPTIONS})
 
 ## list SPDLOG_LEVEL, valid if USE_LOG_SYSTEM is ON, **default Trace**.
 # should be one of "Trace", "Debug", "Info", "Warn ", "Error", "Critical"
+# Only valid for logunit
 set(SPDLOG_LEVEL "Info")
 
 ########################################################################################################################
