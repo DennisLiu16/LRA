@@ -5,17 +5,7 @@ file(GLOB_RECURSE SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
 # add target
 add_library(lra_log_util SHARED ${SRC})
 
-# function include
-# ref: https://cmake.org/cmake/help/latest/module/CMakeDependentOption.html#module:CMakeDependentOption
-# include(CMakeDependentOption)
-
-# options
-# option won't effect Cxx macro directly, use target_compile_definitions to generate macro to src file defined in CMake
-option(USE_LOG_SYSTEM
-  "Determine use log system or disable it. If you decide to enable it, select SPDLOG_LEVEL also."
-  ON
-)
-
+## maybe you can modify this part
 # option(USE_SPDLOG
 #   "On: use spdlog as your log system; Off: use std::cout as your log system."
 #   ON
@@ -23,35 +13,43 @@ option(USE_LOG_SYSTEM
 
 # flag check
 if(USE_LOG_SYSTEM)
-  message(STATUS "Use spdlog as log system")
+  message(STATUS "${BoldGreen}Enable spdlog and use it as log system ${ColorReset}")
   target_compile_definitions(lra_log_util PUBLIC USE_LOG_SYSTEM)
 
-  # Select SPDLOG_LEVEL
-  set(BaseName "trace" CACHE STRING
-  "BaseName chosen by the user at CMake configure time")
+  set_property(CACHE SPDLOG_LEVEL PROPERTY STRINGS trace debug info warn error critical)
 
-  set_property(CACHE BaseName PROPERTY STRINGS trace debug info warn error critical)
+  if(NOT SPDLOG_LEVEL IN_LIST SPDLOG_LEVEL_OPTIONS)
+    message(FATAL_ERROR 
+    "\ 
+    SPDLOG_LEVEL: '${SPDLOG_LEVEL}' is not in SPDLOG_LEVEL_OPTIONS. \ 
+    Must be one of ${SPDLOG_LEVEL_OPTIONS}. \
+    ")
+  else()
+    message(STATUS "${BoldMagenta}SPDLOG_LEVEL='${SPDLOG_LEVEL}' ${ColorReset}")
+  endif()
 
-  message(STATUS "BaseName='${BaseName}'")
-
-  # aborted
-  # if(USE_SPDLOG)
-  #   message(STATUS "Use spdlog as log system")
-  #   target_link_libraries(lra_log_util spdlog)
-  #   target_compile_definitions(lra_log_util PRIVATE USE_SPDLOG)
-  # else()
-  #   message(STATUS "Use std::cout as log system")
-  #   target_compile_definitions(lra_log_util PRIVATE USE_STDLOG)
-  # endif()
+  if(SPDLOG_LEVEL STREQUAL "trace")
+    target_compile_definitions(lra_log_util PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
+  elseif(SPDLOG_LEVEL STREQUAL "debug")
+    target_compile_definitions(lra_log_util PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
+  elseif(SPDLOG_LEVEL STREQUAL "info")
+    target_compile_definitions(lra_log_util PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO)
+  elseif(SPDLOG_LEVEL STREQUAL "warn")
+    target_compile_definitions(lra_log_util PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_WARN)
+  elseif(SPDLOG_LEVEL STREQUAL "error")
+    target_compile_definitions(lra_log_util PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_ERR)
+  else(SPDLOG_LEVEL STREQUAL "critical")
+  target_compile_definitions(lra_log_util PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_CRITICAL)
+  endif()
 
 else()
-  message(STATUS "Disable log system")
-  # define nothing
+  message(STATUS "${BoldRed}Disable log system ${ColorReset}")
+  target_compile_definitions(lra_log_util PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_OFF)
 endif()
 
 target_link_libraries(lra_log_util PUBLIC spdlog)
 target_include_directories(lra_log_util PUBLIC ${SRC_INCLUDE_PATH} ${THIRD_PARTY_INCLUDE_PATH})
-target_compile_options(lra_log_util PUBLIC "-fpermissive")
+target_compile_options(lra_log_util PUBLIC "-fpermissive") # enable nullptr to bool inplicit change
 
 # 可以用 cmake -LH 查看 options 也可以透過 tab 看 -D flag
 # TODO:https://runebook.dev/zh-CN/docs/cmake/command/target_precompile_headers precompile
