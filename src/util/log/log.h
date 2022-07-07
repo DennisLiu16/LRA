@@ -7,16 +7,6 @@
 // ref:
 // https://stackoverflow.com/questions/281818/unmangling-the-result-of-stdtype-infoname
 
-// test region
-
-#if defined(USE_LOG_SYSTEM)
-// Macro for spdlog, should placed above include spdlog files
-#pragma message("Log system enable: use spdlog")
-
-#else
-#pragma message("Log system disable")
-#endif
-
 #include <spdlog/spdlog.h>
 
 #include <boost/core/demangle.hpp>
@@ -27,16 +17,16 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace lra_log_util {
+namespace lra::log_util {
 
 class LogUnit {
  public:
   inline std::string getName() { return name_; }
 
-  LogUnit(auto &obj) {  // input should be *this, an instance or nullptr
+  LogUnit(const auto &obj) {  // input should be *this, an instance or nullptr
     // get name
     std::string class_name;
-    if (!obj) {
+    if (std::is_same<decltype(obj), nullptr_t const&>::value) { // type determine is nullptr const&
       class_name = "global";
     } else {
       class_name = "class_" + boost::core::demangle(typeid(obj).name());
@@ -48,18 +38,22 @@ class LogUnit {
 
   ~LogUnit();
 
-  static std::shared_ptr<LogUnit> CreateLogUnit(auto obj) {
+  static std::shared_ptr<LogUnit> CreateLogUnit(const auto &obj) { //auto obj
     auto ptr = std::make_shared<LogUnit>(obj);
     Register(ptr);
+    ApplyDefaultLogger(ptr);
     return ptr;
   }
 
   static std::shared_ptr<LogUnit> CreateLogUnit() { return CreateLogUnit(nullptr); }
 
-  static bool IsRegistered(const std::string &logunit_name);
-  static std::vector<std::string> getAllKeys();
+  static bool IsRegisteredLogUnit(const std::string &logunit_name);
+  static void AddDefaultLogger(const std::string &logger);
+  static void RemoveDefaultLogger(const std::string &logger);
+  static std::unordered_set<std::string> getAllDefaultLoggers();
+  static std::vector<std::string> getAllLogunitKeys(); // for registered logunits
 
-  static auto getLogUnitPtr(const std::string &logunit_name) { return (IsRegistered(logunit_name)) ? logunits_[logunit_name] : nullptr; }
+  static auto getLogUnitPtr(const std::string &logunit_name) { return (IsRegisteredLogUnit(logunit_name)) ? logunits_[logunit_name] : nullptr; }
 
   void AddLogger(const std::string &logger_name);
   void RemoveLogger(const std::string &logger_name);
@@ -116,7 +110,9 @@ class LogUnit {
   template <typename... Args>
   void _CallSpdlog(const std::shared_ptr<spdlog::logger> &log_ptr, const spdlog::level::level_enum &level,
                    const std::experimental::source_location &loc, Args &&...args) {
-    (log_ptr)->log(spdlog::source_loc{loc.file_name(), loc.line(), loc.function_name()}, level, std::forward<Args>(args)...);
+    std::string new_function_name(loc.function_name()); 
+    (log_ptr)->log(spdlog::source_loc{loc.file_name(), (int)loc.line(), (new_function_name += " <" + this->name_ + ">").c_str()},
+                   level, std::forward<Args>(args)...);
   }
 
   static uint32_t idx_for_next_;  // not static inlineD
@@ -125,9 +121,11 @@ class LogUnit {
   std::unordered_set<std::string> loggers_;  // use string instead of spdlog::logger for
                                              // shared_ptr drop problem
   static std::unordered_map<std::string, std::shared_ptr<LogUnit>> logunits_;
+  static std::unordered_set<std::string> default_loggers_;
 
   static void Register(std::shared_ptr<LogUnit> ptr);
+  static void ApplyDefaultLogger(std::shared_ptr<LogUnit> ptr);
 };
 
-}  // namespace lra_log_util
+}  // namespace lra::log_util
 #endif

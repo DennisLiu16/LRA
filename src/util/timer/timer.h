@@ -33,8 +33,6 @@ class Timer {
   enum class Value { kDefaultDelay = 70,
                      kIdleSleepMs = 1000 };
 
-  std::shared_ptr<lra_log_util::LogUnit> logunit;
-
   // constructor
   Timer();
   explicit Timer(uint32_t thread_num, DelayOpt opt);
@@ -64,6 +62,7 @@ class Timer {
  private:
   static constexpr double min_valid_interval_ = 0.01;  // 10 us
 
+  std::shared_ptr<lra::log_util::LogUnit> logunit;
   uint32_t nanosleep_delay_us_ = 0;
   volatile bool run_flag_ = true;
   volatile bool can_destroy_ = false;

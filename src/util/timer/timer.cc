@@ -22,6 +22,8 @@ Timer::Timer() {
   nanosleep_delay_us_ = static_cast<uint32_t>(Value::kDefaultDelay);
   // open a thread for run (background)
   std::function<void()> daemon = std::bind(&Timer::Run, this, std::thread::hardware_concurrency() / 2);
+  logunit = lra::log_util::LogUnit::CreateLogUnit(*this);
+  logunit->Log(std::make_tuple("Timer daemon started"), spdlog::level::debug);
   std::thread t1(daemon);
   t1.detach();
 }
@@ -37,6 +39,7 @@ Timer::Timer(uint32_t thread_num, DelayOpt opt = DelayOpt::kDefaultDelay) {
 
   // open a thread for run (background)
   std::function<void()> daemon = std::bind(&Timer::Run, this, thread_num);
+  logunit = lra::log_util::LogUnit::CreateLogUnit();
   std::thread t1(daemon);
   t1.detach();
 }
@@ -292,8 +295,6 @@ double Timer::EvalNextInterval() {
 }
 
 double Timer::EvalTimeDiffFromNow(chrono::system_clock::time_point& t) {
-  // TODO: maybe change to rdtsc?
-  // https://stackoverflow.com/questions/13772567/how-to-get-the-cpu-cycle-count-in-x86-64-from-c
   t_now_ = chrono::high_resolution_clock::now();
   return (t_now_ - t).count() / 1e6;
 }
