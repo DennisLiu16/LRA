@@ -11,21 +11,18 @@
 
 #if defined(USE_LOG_SYSTEM)
 // Macro for spdlog, should placed above include spdlog files
-
 #pragma message("Log system enable: use spdlog")
 
 #else
 #pragma message("Log system disable")
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_OFF
 #endif
 
 #include <spdlog/spdlog.h>
 
 #include <boost/core/demangle.hpp>
-#include <experimental/source_location>
-#include <iostream>
-#include <tuple>
 // #include <source_location>  // require g++-11
+#include <experimental/source_location>
+#include <tuple>
 #include <typeinfo>
 #include <unordered_map>
 #include <unordered_set>
@@ -62,13 +59,12 @@ class LogUnit {
   static bool IsRegistered(const std::string &logunit_name);
   static std::vector<std::string> getAllKeys();
 
-  static auto getLogUnitPtr(const std::string &logunit_name) {
-    return (IsRegistered(logunit_name)) ? logunits_[logunit_name] : nullptr;
-  }
+  static auto getLogUnitPtr(const std::string &logunit_name) { return (IsRegistered(logunit_name)) ? logunits_[logunit_name] : nullptr; }
 
   void AddLogger(const std::string &logger_name);
   void RemoveLogger(const std::string &logger_name);
-  void Drop();
+  bool Drop();
+  static bool Drop(const std::string &logunit_name);
 
   // // deduction guide - failed
   // template <typename... Args>
@@ -96,7 +92,6 @@ class LogUnit {
   // template <typename... Args>
   // Log(spdlog::level::level_enum level, Args &&...) -> Log<Args...>;
 
-
   // example:
   // logunit->Log(std::make_tuple("msg id {}", 42), spdlog::level::error)
   // you should check SPDLOG_ACTIVE_LEVEL by CMakeLists
@@ -110,7 +105,7 @@ class LogUnit {
 
     for (const auto &logger : loggers_) {  // string type
       if (std::shared_ptr<spdlog::logger> log_ptr = spdlog::get(logger); log_ptr != nullptr) {
-        std::apply([&](auto &&... args) { _CallSpdlog(log_ptr, level, loc, args...); }, tuple);
+        std::apply([&](auto &&...args) { _CallSpdlog(log_ptr, level, loc, args...); }, tuple);
       } else {
         loggers_.erase(logger);
       }
@@ -121,8 +116,8 @@ class LogUnit {
   template <typename... Args>
   void _CallSpdlog(const std::shared_ptr<spdlog::logger> &log_ptr, const spdlog::level::level_enum &level,
                    const std::experimental::source_location &loc, Args &&...args) {
-                    (log_ptr)->log(spdlog::source_loc{loc.file_name(), loc.line(), loc.function_name()}, level, std::forward<Args>(args)...);
-                   }
+    (log_ptr)->log(spdlog::source_loc{loc.file_name(), loc.line(), loc.function_name()}, level, std::forward<Args>(args)...);
+  }
 
   static uint32_t idx_for_next_;  // not static inlineD
 

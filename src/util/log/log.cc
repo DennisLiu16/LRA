@@ -4,7 +4,7 @@ namespace lra_log_util {
 
 // implement of LogUnit
 // public
-LogUnit::~LogUnit() {}
+LogUnit::~LogUnit() {Drop();}
 
 void LogUnit::AddLogger(const std::string &logger_name) {  // move copy value to unordered set directly
   loggers_.insert(logger_name);
@@ -15,13 +15,20 @@ void LogUnit::RemoveLogger(const std::string &logger_name) {  // move copy value
 }
 
 bool LogUnit::IsRegistered(const std::string &logunit_name) {
-  return logunits_.count(logunit_name);
+  if(!Drop(logunit_name)) {
+    return logunits_[logunit_name].use_count() > 0;
+  }
 }
 
 std::vector<std::string> LogUnit::getAllKeys() {
   std::vector<std::string> vec{};
   for(auto map: logunits_) {
-    vec.push_back(map.first);
+    long count = map.second.use_count();
+    if(count > 1) {
+      vec.push_back(map.first);
+    } else if(count == 1) {
+      Drop(map.first);
+    }
   }
   return vec;
 }
@@ -29,13 +36,21 @@ std::vector<std::string> LogUnit::getAllKeys() {
 // private
 void LogUnit::Register(std::shared_ptr<LogUnit> ptr) { logunits_[ptr->name_] = ptr; }
 
-// 要搞清楚順序
-// 放在 ~LogUnit 會錯是因為只有當 use_count == 0 也就是物件不存在時才會 call destructor -> invalid
-// operation ? used in class' destruor
-void LogUnit::Drop() {  // should use when shared_ptr.use_count() == 1, so Drop->~LogUnit()
-  std::cout << "left " << logunits_[name_].use_count() << std::endl;
-  std::cout << "remove " + name_ << std::endl;
-  logunits_.erase(name_);
+// Drop logunit only be used in logunits_
+bool LogUnit::Drop(const std::string &logunit_name) {
+  if(logunits_[logunit_name].use_count() == 1) {
+    logunits_.erase(logunit_name);
+    return true;
+  }
+  return false;
+}
+
+bool LogUnit::Drop() {  // should use when shared_ptr.use_count() == 1, so Drop->~LogUnit()
+  if(logunits_[name_].use_count() == 1) {
+    logunits_.erase(name_);
+    return true;
+  }
+  return false;
 }
 
 // static variable init
