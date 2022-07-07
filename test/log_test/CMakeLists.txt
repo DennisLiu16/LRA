@@ -1,5 +1,11 @@
 add_executable(lra_log_util_test log_test.cc)
-
-
 target_include_directories(lra_log_util_test PRIVATE lra_log_util)
 target_link_libraries(lra_log_util_test PRIVATE lra_log_util)
+
+
+add_executable(lra_default_logger_test default_logger_test.cc)
+target_include_directories(lra_default_logger_test PRIVATE lra_log_util)
+target_link_libraries(lra_default_logger_test PRIVATE lra_log_util lra_timer_util)
+
+
+
