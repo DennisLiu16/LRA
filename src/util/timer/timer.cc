@@ -10,10 +10,6 @@
 
 #include <util/log/log.h>
 
-// don't need to include spdlog related files if you want to link spdlog lib, or include what you use manually
-
-// TODO: include or not ?F
-
 namespace lra::timer_util {
 
 namespace chrono = std::chrono;
@@ -74,12 +70,12 @@ uint32_t Timer::SetLoopEvent(const F& task, double period_ms) {
 // event will be removed at next pop
 bool Timer::CancelEvent(uint32_t uid) {
   if (uid >= uid_for_next_event_) {
-    // TODO: warning: uid not exists
+    logunit->Log(std::make_tuple("uid: {} invalid - exceeds uid_for_next_event_", uid), spdlog::level::warn);
     return false;
   }
   bool ret = RemoveUid(uid);
   if (!ret) {
-    // TODO: warning: this uid was already been removed
+    logunit->Log(std::make_tuple("this uid: {} was already been removed", uid), spdlog::level::warn);
   }
   return ret;
 }
@@ -167,8 +163,6 @@ void Timer::Run(uint32_t thread_num) {
 
 template <typename F>
 TimerEvent Timer::CreateTimerEvent(const F& task, double period_ms) {
-  // TODO: warning: too short period might crush
-
   TimerEvent te;
   te.is_loop_event = false;
   te.period_ms = period_ms;
@@ -177,6 +171,10 @@ TimerEvent Timer::CreateTimerEvent(const F& task, double period_ms) {
   valid_uid_.push_back(uid_for_next_event_);  // register uid
   te.uid = uid_for_next_event_++;             // increment 1 after assign to te.uid
   te.t = std::chrono::high_resolution_clock::now();
+  if (period_ms < 1.0) {
+    logunit->Log(std::make_tuple("uid: {}'s period is {:.4f} < 1.0 (ms), timer may crushed", te.uid, period_ms),
+                 spdlog::level::warn);
+  }
   return te;
 }
 
@@ -199,8 +197,7 @@ bool Timer::RemoveUid(uint32_t uid) {
 // use gettimeofday() to evaluate delay(us) in nanosleep
 // pass unit test
 uint32_t Timer::GetErrorOfNanosleep() {
-  constexpr std::array<uint32_t, 20> delay =
-      {500000, 100000, 50000, 10000, 1000, 900, 500, 100, 10, 1};
+  constexpr std::array<uint32_t, 20> delay = {500000, 100000, 50000, 10000, 1000, 900, 500, 100, 10, 1};
 
   timespec req;
   timeval tval_begin, tval_end;
@@ -215,7 +212,9 @@ uint32_t Timer::GetErrorOfNanosleep() {
     gettimeofday(&tval_begin, nullptr);
     int ret = nanosleep(&req, nullptr);
     if (-1 == ret) {
-      // TODO:log nanosleep doesn't support
+      logunit->Log(std::make_tuple("nanosleep doesn't support in this OS, return delay to default value: {} (us)",
+                                   static_cast<uint32_t>(Value::kDefaultDelay)),
+                   spdlog::level::err);
       return static_cast<uint32_t>(Value::kDefaultDelay);
     }
     gettimeofday(&tval_end, nullptr);
@@ -223,7 +222,7 @@ uint32_t Timer::GetErrorOfNanosleep() {
   }
 
   t_diff /= delay.size();
-  // TODO:log t_diff
+  logunit->Log(std::make_tuple("nanosleep delay: {} (us)", t_diff), spdlog::level::info);
 
   return t_diff;
 }
@@ -235,8 +234,7 @@ double Timer::GetErrorOfTimerMs(double duration_ms) {
 
 void Timer::HandleExpiredEvents(BS::thread_pool& pool) {  // events should be well sorted in queue
 
-  if (event_queue_.empty())
-    return;
+  if (event_queue_.empty()) return;
 
   static uint64_t overloading_count = 0;
 
@@ -262,7 +260,7 @@ void Timer::HandleExpiredEvents(BS::thread_pool& pool) {  // events should be we
     if (!HasIdleThread(pool)) {  // overloading record
       overloading_count++;
       if ((overloading_count - overloading_count / 10 * 10)) {  // send debug log every ten times
-        // TODO: debug: Timer's thread pool overloading: _
+        logunit->Log(std::make_tuple("Timer Overloading: {}", overloading_count), spdlog::level::warn);
       }
     }
 

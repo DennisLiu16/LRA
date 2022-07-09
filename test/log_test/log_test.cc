@@ -7,6 +7,8 @@
 std::string ptr2_name;
 std::shared_ptr<lra::log_util::LogUnit> global_ptr;
 
+// multiple sinks: https://spdlog.docsforge.com/v1.x/2.creating-loggers/#creating-loggers-with-multiple-sinks
+
 void func() {
   std::shared_ptr<lra::log_util::LogUnit> ptr2 = lra::log_util::LogUnit::CreateLogUnit();
   ptr2_name = ptr2->getName();
