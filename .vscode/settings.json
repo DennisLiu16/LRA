@@ -74,7 +74,8 @@
         "numbers": "cpp",
         "semaphore": "cpp",
         "stop_token": "cpp",
-        "span": "cpp"
+        "span": "cpp",
+        "ranges": "cpp"
     },
     "svg.preview.background": "custom",
 
