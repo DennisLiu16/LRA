@@ -26,7 +26,7 @@ class LogUnit {
   LogUnit(const auto &obj) {  // input should be *this, an instance or nullptr
     // get name
     std::string class_name;
-    if (std::is_same<decltype(obj), nullptr_t const&>::value) { // type determine is nullptr const&
+    if constexpr (std::is_same<decltype(obj), decltype(nullptr) const&>::value) { // type determine is nullptr const&
       class_name = "global";
     } else {
       class_name = "class_" + boost::core::demangle(typeid(obj).name());
