@@ -33,7 +33,7 @@ int main() {
   ptr->AddLogger("console");
   int i = 0, j = 0;
   while (i++ < 4000) {
-    ptr->Log(std::make_tuple("{}:test", i), spdlog::level::trace);
+    ptr->Log(spdlog::level::trace, "{}:test", i);
   }
 
   spdlog::set_default_logger(spdlog::get("console"));

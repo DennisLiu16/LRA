@@ -19,7 +19,7 @@ Timer::Timer() {
   // open a thread for run (background)
   std::function<void()> daemon = std::bind(&Timer::Run, this, std::thread::hardware_concurrency() / 2);
   logunit = lra::log_util::LogUnit::CreateLogUnit(*this);
-  logunit->Log(std::make_tuple("Timer daemon started"), spdlog::level::debug);
+  logunit->Log(spdlog::level::debug, "Timer daemon started");
   std::thread t1(daemon);
   t1.detach();
 }
@@ -70,12 +70,12 @@ uint32_t Timer::SetLoopEvent(const F& task, double period_ms) {
 // event will be removed at next pop
 bool Timer::CancelEvent(uint32_t uid) {
   if (uid >= uid_for_next_event_) {
-    logunit->Log(std::make_tuple("uid: {} invalid - exceeds uid_for_next_event_", uid), spdlog::level::warn);
+    logunit->Log(spdlog::level::warn, "uid: {} invalid - exceeds uid_for_next_event_", uid);
     return false;
   }
   bool ret = RemoveUid(uid);
   if (!ret) {
-    logunit->Log(std::make_tuple("this uid: {} was already been removed", uid), spdlog::level::warn);
+    logunit->Log(spdlog::level::warn, "this uid: {} was already been removed", uid);
   }
   return ret;
 }
@@ -172,8 +172,7 @@ TimerEvent Timer::CreateTimerEvent(const F& task, double period_ms) {
   te.uid = uid_for_next_event_++;             // increment 1 after assign to te.uid
   te.t = std::chrono::high_resolution_clock::now();
   if (period_ms < 1.0) {
-    logunit->Log(std::make_tuple("uid: {}'s period is {:.4f} < 1.0 (ms), timer may crushed", te.uid, period_ms),
-                 spdlog::level::warn);
+    logunit->Log(spdlog::level::warn, "uid: {}'s period is {:.4f} < 1.0 (ms), timer may crushed", te.uid, period_ms);
   }
   return te;
 }
@@ -212,9 +211,8 @@ uint32_t Timer::GetErrorOfNanosleep() {
     gettimeofday(&tval_begin, nullptr);
     int ret = nanosleep(&req, nullptr);
     if (-1 == ret) {
-      logunit->Log(std::make_tuple("nanosleep doesn't support in this OS, return delay to default value: {} (us)",
-                                   static_cast<uint32_t>(Value::kDefaultDelay)),
-                   spdlog::level::err);
+      logunit->Log(spdlog::level::err, "nanosleep doesn't support in this OS, return delay to default value: {} (us)",
+                                   static_cast<uint32_t>(Value::kDefaultDelay));
       return static_cast<uint32_t>(Value::kDefaultDelay);
     }
     gettimeofday(&tval_end, nullptr);
@@ -222,7 +220,7 @@ uint32_t Timer::GetErrorOfNanosleep() {
   }
 
   t_diff /= delay.size();
-  logunit->Log(std::make_tuple("nanosleep delay: {} (us)", t_diff), spdlog::level::info);
+  logunit->Log(spdlog::level::info, "nanosleep delay: {} (us)", t_diff);
 
   return t_diff;
 }
@@ -260,7 +258,7 @@ void Timer::HandleExpiredEvents(BS::thread_pool& pool) {  // events should be we
     if (!HasIdleThread(pool)) {  // overloading record
       overloading_count++;
       if ((overloading_count - overloading_count / 10 * 10)) {  // send debug log every ten times
-        logunit->Log(std::make_tuple("Timer Overloading: {}", overloading_count), spdlog::level::warn);
+        logunit->Log(spdlog::level::warn, "Timer Overloading: {}", overloading_count);
       }
     }
 
