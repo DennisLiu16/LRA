@@ -49,8 +49,10 @@ if(NOT WIN32)
   set(BoldWhite   "${Esc}[1;37m")
 endif()
 
-set(CMAKE_CXX_COMPILER "/usr/bin/g++")
+set(CMAKE_CXX_COMPILER "/usr/bin/g++-11")
 set(CMAKE_C_COMPILER "/usr/bin/gcc")
+
+message(STATUS ${CMAKE_CXX_COMPILER})
 
 
 project(LRA LANGUAGES C CXX
