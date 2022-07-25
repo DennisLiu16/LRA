@@ -31,6 +31,8 @@ class LogUnit {
  public:
   inline std::string getName() { return name_; }
 
+  LogUnit(const char* name);
+
   LogUnit(const auto &obj) {  // input should be *this, an instance or nullptr
     // get name
     std::string class_name;
@@ -41,7 +43,6 @@ class LogUnit {
     }
     // increment idx_for_next_
     name_ = class_name.append(1, '_').append(std::to_string(idx_for_next_++));
-    // important: https://zh-blog.logan.tw/2020/03/22/cxx-17-inline-variable/
   }
 
   ~LogUnit();
@@ -142,8 +143,10 @@ class LogUnit {
     }
   }
 
+  // TODO: We need a Log, LogAll and LogGlobal
+
  private:
-  static uint32_t idx_for_next_;  // not static inlineD
+  static uint32_t idx_for_next_;  // not static inline, https://zh-blog.logan.tw/2020/03/22/cxx-17-inline-variable/
 
   std::string name_;                         // unique LogUnit name
   std::unordered_set<std::string> loggers_;  // use string instead of spdlog::logger for

@@ -4,6 +4,11 @@ namespace lra::log_util {
 
 // implement of LogUnit
 // public
+LogUnit::LogUnit(const char* name) {
+  std::string n(name);
+  name_ = n.append(1, '_').append(std::to_string(idx_for_next_++));
+}
+
 LogUnit::~LogUnit() { Drop(); }
 
 void LogUnit::AddLogger(const std::string &logger_name) {  // move copy value to unordered set directly

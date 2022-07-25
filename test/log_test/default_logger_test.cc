@@ -10,12 +10,21 @@ int main() {
   my_logger->set_level(spdlog::level::trace);
   my_logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [%s:%!:%#] %v");
 
+  // test AddDefaultLogger working situation of multiple thread class
   lra::log_util::LogUnit::AddDefaultLogger("console");
-
+  lra::timer_util::Timer T;
   auto vec = lra::log_util::LogUnit::getAllLogunitKeys();
   for(auto s: vec) {
     spdlog::fmt_lib::print("{}\n", s);
   }
+  
 
-  lra::timer_util::Timer T;
+  spdlog::fmt_lib::print("----------\n");
+
+  // test const char* as logunit name 
+  auto log_ptr = lra::log_util::LogUnit::CreateLogUnit("my_logunit");
+  vec = lra::log_util::LogUnit::getAllLogunitKeys();
+  for(auto s: vec) {
+    spdlog::fmt_lib::print("{}\n", s);
+  }
 }
