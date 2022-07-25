@@ -18,24 +18,23 @@ constexpr bool is_subset_of<std::tuple<Ts...>, std::tuple<Us...>> = (contains<Ts
 
 // SameType
 template <typename T, typename U>
-concept SameType = std::is_same_v<T, U>;
+concept is_same = std::is_same_v<T, U>;
 
 // Included, T in Ts...
 template <typename T, typename... Ts>
-concept Contains = (SameType<T, Ts> || ...);
+concept Contains = (is_same<T, Ts> || ...);
 
-// IsSubsetOf
+// subset_of
 // ref: https://stackoverflow.com/a/42581655/17408307
 template <typename T, typename U>
-concept IsSubsetOf = is_subset_of<T, U>;
+concept subset_of = is_subset_of<T, U>;
 
 // T is derived class of U
 // e.g.
 // template<Derived<Base> T>
 // void f(T); // T is constrained by Derived<T, Base>
 template <class T, class U>
-concept Derived = std::is_base_of_v<U, T>;
-
+concept derived = std::is_base_of_v<U, T>;
 
 }  // namespace lra::concepts_util
 
