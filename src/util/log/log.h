@@ -16,6 +16,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+// TODO: V2 - make a simpler(use more spdlog features) and string_view args version
+
 namespace lra::log_util {
 
 struct LevelAndLocation {
