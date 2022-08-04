@@ -4,12 +4,20 @@
 #include <device/device.h>
 #include <memory/registers/registers.h>
 
-namespace lra::device::adxl355 {
+#include <deque>
 
-class Adxl355 : public lra::device::Device {
- private:
+namespace lra::device {
+
+class Adxl355 {
+ public:
+  typedef struct Float3 {
+    float x{0.0};
+    float y{0.0};
+    float z{0.0};
+  } Acc3;
+
   // Register
-  constinit static Register_8 DEVID_AD(0x00, 0xAD);
+  constexpr static Register_8 DEVID_AD(0x00, 0xAD);
   constexpr static Register_8 DEVID_MST(0x01, 0x1D);
   constexpr static Register_8 PARTID(0x02, 0xED);
   constexpr static Register_8 DREVID(0x03, 0x01);
@@ -46,14 +54,18 @@ class Adxl355 : public lra::device::Device {
   constexpr static Register_8 SELF_TEST(0x2E, 0x00);
   constexpr static Register_8 Reset(0x2F, 0x00);
 
- public:
+  // Register pool
   constexpr static std::array regs_{std::to_array<Register_T>(
       {DEVID_AD, DEVID_MST,    PARTID,       DREVID,     Status,     FIFO_ENTRIES, TEMP2,      TEMP1,
        XDATA3,   XDATA2,       XDATA1,       YDATA3,     YDATA2,     YDATA1,       ZDATA3,     ZDATA2,
        ZDATA1,   FIFO_DATA,    OFFSET_X_H,   OFFSET_X_L, OFFSET_Y_H, OFFSET_Y_L,   OFFSET_Z_H, OFFSET_Z_L,
        ACT_EN,   ACT_THRESH_H, ACT_THRESH_L, ACT_COUNT,  Filter,     FIFO_SAMPLES, INT_MAP,    Sync,
        Range,    POWER_CTL,    SELF_TEST,    Reset})};
+
+ private:
+    std::deque<Acc3> data_pool_;
+    // std::shared_mutex
 };
-}  // namespace lra::device::adxl355
+}  // namespace lra::device
 
 #endif
