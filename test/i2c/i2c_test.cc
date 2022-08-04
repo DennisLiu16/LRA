@@ -1,17 +1,19 @@
 
 #include "i2c.h"
-#include <sys/ioctl.h>
 
+#include <sys/ioctl.h>
 
 #include <chrono>
 #include <cstdio>
 
 #define STRING(s) #s
 
+#include <fcntl.h>
+
 #include <array>
+#include <iostream>
 #include <memory>
 #include <string>
-#include <iostream>
 
 std::string Execute(const char* cmd) {
   std::array<char, 128> buffer;
@@ -25,6 +27,8 @@ std::string Execute(const char* cmd) {
   }
   return result;
 }
+
+static inline bool FdValid(int fd) { return fcntl(fd, F_GETFL) != -1 || errno != EBADF; };
 
 int main() {
   int fd = i2c_open("/dev/i2c-1");
@@ -70,6 +74,12 @@ int main() {
   std::cout << "speed: " << speed_ << std::endl;
 
   i2c_close(dev.bus);
+
+  start = std::chrono::high_resolution_clock::now();
+  if (FdValid(dev.bus)) {
+  }
+  end = std::chrono::high_resolution_clock::now();
+  printf("cost %d ns\n", (end - start).count());
 
   // to test non Register input
 }
