@@ -6,74 +6,50 @@
 #include <util/log/log.h>
 #include <util/terminal/terminal.h>
 
+// TODO: include fnctl ...
+
 namespace lra::bus {
 using ::lra::memory::registers::is_register;
-using ::lra::memory::registers::is_valid_regOperation;
+using ::lra::memory::registers::is_valid_type_val;
 
 // classes
 
 template <typename T>
 class Bus {
  public:
-  std::shared_ptr<lra::log_util::LogUnit> logunit_ = nullptr;
+  std::shared_ptr<lra::log_util::LogUnit> logunit_ = nullptr;  // try to eliminate this
 
-  // CRTP
-  template <typename S>
-  bool Init(const S& init_s) {
-    return static_cast<T*>(this)->InitImpl(init_s);  // specify different init struct for different bus, or const char*
-  }
+  // CRTP interface
+
+  // make Method enum in every bus class, and pass them as first template param
 
   template <typename... Args>
-  ssize_t Write(Args... args) {
-    return static_cast<T*>(this)->WriteImpl(args...);
+  bool Init(Args&&... args) {
+    return static_cast<T*>(this)->InitImpl(std::forward<Args>(args)...);  // more general form
   }
 
-  template <typename... Args>
-  ssize_t WriteMulti(Args... args) {
-    return static_cast<T*>(this)->WriteMultiImpl(args...);
+  template <auto Method, typename... Args>
+  ssize_t Write(Args&&... args) {
+    return static_cast<T*>(this)->WriteImpl<Method>(std::forward<Args>(args)...);
   }
 
-  template <typename... Args>
-  ssize_t Read(Args... args) {
-    return static_cast<T*>(this)->ReadImpl(args...);
+  template <auto Method, typename... Args>
+  ssize_t WriteMulti(Args&&... args) {
+    return static_cast<T*>(this)->WriteMultiImpl<Method>(std::forward<Args>(args)...);
   }
 
-  template <typename... Args>
-  ssize_t ReadMulti(Args... args) {
-    return static_cast<T*>(this)->ReadMultiImpl(args...);
+  template <auto Method, typename... Args>
+  ssize_t Read(Args&&... args) {
+    return static_cast<T*>(this)->ReadImpl<Method>(std::forward<Args>(args)...);
   }
 
-  template <typename... Args>
-  ssize_t Modify(Args... args) {
-    return static_cast<T*>(this)->ModifyImpl(args...);
+  template <auto Method, typename... Args>
+  ssize_t ReadMulti(Args&&... args) {
+    return static_cast<T*>(this)->ReadMultiImpl<Method>(std::forward<Args>(args)...);
   }
 
  protected:
-  template <typename V>
-  bool IsNegative(const V& v) {
-    if constexpr (std::integral<V>) {
-      return (v < 0);
-    }
-
-    // bitset will never evaluate as negative number
-    return false;
-  }
-
-  // Impl
-  // template <typename S>
-  // bool InitImpl(const uint64_t& addr, const S& init_s);
-
-  // template <typename... Args>
-  // bool WriteImpl(const is_register auto& reg, Args... args);
-
-  // template <typename... Args>
-  // bool WriteMultiImpl(const is_register auto& reg_begin, const is_register auto& reg_end, Args... args);
-
-  // template <typename... Args>
-  // auto ReadImpl(const is_register auto& reg);
-
-  // template <typename... Args>
-  // bool ReadMultiImpl(const is_register auto& reg_begin, const is_register auto& reg_end, Args... args);
+  static inline bool FdValid(int fd) { return fcntl(fd, F_GETFL) != -1 || errno != EBADF; };
 
  private:
   Bus() = default;
