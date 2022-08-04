@@ -22,7 +22,7 @@ concept is_same = std::is_same_v<T, U>;
 
 // Included, T in Ts...
 template <typename T, typename... Ts>
-concept Contains = (is_same<T, Ts> || ...);
+concept contain = (is_same<T, Ts> || ...);
 
 // subset_of
 // ref: https://stackoverflow.com/a/42581655/17408307
