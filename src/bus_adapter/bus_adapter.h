@@ -2,8 +2,10 @@
 #define LRA_BUS_ADAPTER_H_
 
 #include <bus/bus.h>
+#include <device/device_info.h>
 #include <memory/registers/registers.h>
 #include <unistd.h>
+#include <util/log/log.h>
 
 namespace lra::bus_adapter {
 using ::lra::memory::registers::is_register;
@@ -13,13 +15,6 @@ template <typename T>
 class BusAdapter {
  public:
   std::shared_ptr<lra::log_util::LogUnit> logunit_ = nullptr;
-
-  // CRTP interface
-  // template <typename S>
-  // bool Init(const S& init_s) {
-  //   return static_cast<T*>(this)->InitImpl(init_s);  // specify different init struct for different bus, or const
-  //   char*
-  // }
 
   template <typename... Args>
   bool Init(Args&&... args) {
