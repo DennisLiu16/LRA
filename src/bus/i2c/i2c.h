@@ -2,9 +2,6 @@
 #define LRA_BUS_I2C_H_
 #include <arpa/inet.h>
 #include <bus/bus.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -85,10 +82,39 @@ class I2c : public Bus<I2c> {
 
   void I2cResetThisBus();
 
-  ssize_t PlainRW(i2c_rdwr_ioctl_data* data);
+  template <typename T>
+  requires std::same_as<std::remove_const_t<T>, i2c_rdwr_ioctl_data> ssize_t PlainRW(T* data) {
+    // if(!FdValid(fd_)) { // fd not valid, abort (cost about 3 us on Raspi) -> should check by user}
+    if (ioctl(fd_, I2C_RDWR, (unsigned long)data) < 0) {
+      return -1;
+    }
 
-  template <bool Read>
-  ssize_t SmbusRW(i2c_rdwr_smbus_data* data);
+    // return msg[1].len for iaddr read and msg[0].len for non-iaddr-read / write
+    // write len == iaddr_bytes + size
+    // read len  == size
+    return data->msgs[data->nmsgs - 1].len;
+  }
+
+  // https://git.kernel.org/pub/scm/utils/i2c-tools/i2c-tools.git/
+  /* Until kernel 2.6.22, the length is hardcoded to 32 bytes. If you
+     ask for less than 32 bytes, your code will only work with kernels
+     2.6.23 and later. */
+  // tempalte make compile size down
+  template <bool Read, typename T> requires std::same_as<std::remove_const_t<T>, i2c_rdwr_smbus_data>
+  ssize_t SmbusRW(T* data) {
+    if (last_slave_addr_ != data->slave_addr_) {  // change to target slave device
+      if (ioctl(fd_, I2C_SLAVE, data->slave_addr_) < 0) return -1;
+      last_slave_addr_ = data->slave_addr_;
+    }
+
+    if constexpr (Read) {  // read
+      // TODO: Add byte / word version
+      return i2c_smbus_read_i2c_block_data(fd_, data->command_, data->len_, data->value_);
+
+    } else {  // write
+      return i2c_smbus_write_i2c_block_data(fd_, data->command_, data->len_, data->value_);
+    }
+  }
 
   // i2c sub functions
 
