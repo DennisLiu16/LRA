@@ -20,7 +20,7 @@ bool I2cAdapter::InitImpl(const I2cAdapterInit_S& init_s) {
 // case 2
 // val won't be modified because const will be declaration in next layer (in bus/i2c.h) WriteMultiImpl
 ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, uint8_t* val, const uint16_t len) {
-  if (!I2cInternalAddrCheck(info_.dev_info_->iaddr_bytes, iaddr)) {
+  if (!I2cInternalAddrCheck(info_.dev_info_->iaddr_bytes_, iaddr)) {
     // TODO:Logerr(addr len > dev_info_->iaddr_bytes_);
     return 0;
   }
@@ -50,7 +50,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, uint8_t* val, const uint16_
     ioctl_msg.len = sizeof(tmp_buf);
     ioctl_msg.addr = info_.dev_info_->addr_;  // slave address
     ioctl_msg.buf = tmp_buf;
-    ioctl_msg.flags = info_.dev_info_->flags_;
+    ioctl_msg.flags = flags;
 
     ret_size = info_.bus_->WriteMulti<I2c::I2cMethod::kPlain>(&ioctl_data);
   } else if (info_.method_ == I2c::I2cMethod::kSmbus) {
@@ -75,7 +75,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, uint8_t* val, const uint16_
 
 // case 3. (addr, vector)
 ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, std::vector<uint8_t>& val) {
-  if (!I2cInternalAddrCheck(info_.dev_info_->iaddr_bytes, iaddr)) {
+  if (!I2cInternalAddrCheck(info_.dev_info_->iaddr_bytes_, iaddr)) {
     // TODO:Logerr(addr len > dev_info_->iaddr_bytes_);
     return 0;
   }
@@ -104,7 +104,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, std::vector<uint8_t>& val) 
     ioctl_msg.len = sizeof(tmp_buf);
     ioctl_msg.addr = info_.dev_info_->addr_;  // slave address
     ioctl_msg.buf = tmp_buf;
-    ioctl_msg.flags = info_.dev_info_->flags_;
+    ioctl_msg.flags = flags;
 
     ret_size = info_.bus_->WriteMulti<I2c::I2cMethod::kPlain>(&ioctl_data);
   } else if (info_.method_ == I2c::I2cMethod::kSmbus) {
@@ -133,7 +133,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, std::vector<uint8_t>& val) 
 
 // case 3
 ssize_t I2cAdapter::ReadImpl(const int64_t& iaddr, uint8_t* val, const uint16_t& len) {
-  if (!I2cInternalAddrCheck(info_.dev_info_->iaddr_bytes, iaddr)) {
+  if (!I2cInternalAddrCheck(info_.dev_info_->iaddr_bytes_, iaddr)) {
     // TODO:Logerr(iaddr len > dev_info_->iaddr_bytes_);
     return 0;
   }
@@ -223,7 +223,7 @@ bool I2cAdapter::I2cSmbusCheckFail() {
   // 10-bit slave address is not allowed
   // iaddr_bytes only accepts 1 byte
   // TODO: add len check (__u8)
-  return (info_.dev_info_->tenbit_) || (info_.dev_info_->iaddr_bytes > sizeof(uint8_t));
+  return (info_.dev_info_->tenbit_) || (info_.dev_info_->iaddr_bytes_ > sizeof(uint8_t));
 }
 
 bool I2cAdapter::I2cPlainCheckFail() {

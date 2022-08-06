@@ -114,7 +114,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
   ssize_t WriteImpl(const T& reg, const U& val) {
     // TODO: Write a function to decrease repeat code for write WriteImpl
     // check iaddr len <= iaddr_bytes_ (make sure that iaddr is perfectly convertible)
-    if (!I2cInternalAddrCheck(info_.dev_info_->iaddr_bytes, reg.addr_)) {
+    if (!I2cInternalAddrCheck(info_.dev_info_->iaddr_bytes_, reg.addr_)) {
       // TODO:Logerr(iaddr len > dev_info_->iaddr_bytes_);
       return 0;
     }
@@ -155,7 +155,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
       ioctl_msg.len = sizeof(tmp_buf);
       ioctl_msg.addr = info_.dev_info_->addr_;  // slave address
       ioctl_msg.buf = tmp_buf;
-      ioctl_msg.flags = info_.dev_info_->flags_;
+      ioctl_msg.flags = flags;
 
       ret_size = info_.bus_->WriteMulti<I2c::I2cMethod::kPlain>(&ioctl_data);
     } else if (info_.method_ == I2c::I2cMethod::kSmbus) {  // call SMBus method
@@ -204,7 +204,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
   // case 1.
   template <is_register T, std::integral U>
   ssize_t ReadImpl(const T& reg, U& val) {
-    if (!I2cInternalAddrCheck(info_.dev_info_->iaddr_bytes, reg.addr_)) {
+    if (!I2cInternalAddrCheck(info_.dev_info_->iaddr_bytes_, reg.addr_)) {
       // TODO:Logerr(iaddr len > dev_info_->iaddr_bytes_);
       return 0;
     }
@@ -276,7 +276,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
   // extend user variable type (not only uint8_t&)
   ssize_t ReadImpl(const int64_t& iaddr, std::integral auto& val_r) {
     uint8_t val = 0;
-    if (!I2cInternalAddrCheck(info_.dev_info_->iaddr_bytes, iaddr)) {
+    if (!I2cInternalAddrCheck(info_.dev_info_->iaddr_bytes_, iaddr)) {
       // TODO:Logerr(iaddr len > dev_info_->iaddr_bytes_);
       return 0;
     }
