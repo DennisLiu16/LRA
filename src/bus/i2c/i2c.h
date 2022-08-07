@@ -33,12 +33,14 @@ class I2c : public Bus<I2c> {
  public:
   // vars
   int32_t fd_{-1};
-  int32_t func_{-1};   // from ioctl(fd, I2C_FUNC, &func_);
+  uint64_t func_{0};   // from ioctl(fd, I2C_FUNC, &funcs); // uint32_t
   uint32_t speed_{0};  // 0 for unknown, invalid
   const char* name_{""};
 
   // enum
   enum class I2cMethod { kPlain, kSmbus };
+
+  ~I2c();
 
  private:
   // let base class becomes friend to use impl func
@@ -51,17 +53,42 @@ class I2c : public Bus<I2c> {
 
   // write "single" byte
   template <I2cMethod method>
-  ssize_t WriteImpl(const void* data);
+  ssize_t WriteImpl(const void* data) {
+    return WriteMultiImpl<method>(data);
+  }
 
   template <I2cMethod method>
-  ssize_t WriteMultiImpl(const void* data);
+  ssize_t WriteMultiImpl(const void* data) {
+    if constexpr (I2cMethod::kPlain == method) {  // I2C plain device, prefer
 
-  // read "single" byte
-  template <I2cMethod method>
-  ssize_t ReadImpl(void* data);
+      auto typed_data = static_cast<const i2c_rdwr_ioctl_data*>(data);
+      return PlainRW(typed_data);
+
+    } else if constexpr (I2cMethod::kSmbus == method) {  // I2C SMBUS
+
+      auto typed_data = static_cast<const i2c_rdwr_smbus_data*>(data);
+      return SmbusRW<false>(typed_data);  // false -> write cmd
+    }
+  }
 
   template <I2cMethod method>
-  ssize_t ReadMultiImpl(void* data);
+  ssize_t ReadImpl(void* data) {
+    return ReadMultiImpl<method>(data);
+  }
+
+  template <I2cMethod method>
+  ssize_t ReadMultiImpl(void* data) {
+    if constexpr (I2cMethod::kPlain == method) {  // I2C plain device, prefer
+
+      auto typed_data = static_cast<i2c_rdwr_ioctl_data*>(data);
+      return PlainRW(typed_data);
+
+    } else if constexpr (I2cMethod::kSmbus == method) {  // I2C SMBUS
+
+      auto typed_data = static_cast<i2c_rdwr_smbus_data*>(data);
+      return SmbusRW<true>(typed_data);  // write for false
+    }
+  }
 
   // vars
   uint16_t last_slave_addr_{0};
@@ -127,7 +154,7 @@ class I2c : public Bus<I2c> {
    * @url: https://elixir.bootlin.com/linux/v5.4/source/include/uapi/linux/i2c.h#L90
    * @url: https://www.kernel.org/doc/html/latest/i2c/functionality.html
    */
-  int32_t I2cUpdateThisBusFunc();
+  uint64_t I2cUpdateThisBusFunc();
 
   /**
    * @brief Update and compare
@@ -137,7 +164,7 @@ class I2c : public Bus<I2c> {
    * @return true
    * @return false
    */
-  bool I2cUpdateFuncAndCompare(int32_t func);
+  bool I2cUpdateFuncAndCompare(uint64_t func);
 
   // speed related
   bool IsPiDistribution(std::string_view current_version);
@@ -145,8 +172,6 @@ class I2c : public Bus<I2c> {
   std::string getKernelVersion();
 
   uint32_t UpdateI2cSpeedOnPi();
-
-  ~I2c();
 };
 
 }  // namespace lra::bus

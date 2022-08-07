@@ -34,44 +34,6 @@ bool I2c::InitImpl(const char* bus_name) {
   return true;
 }
 
-template <I2c::I2cMethod method>
-ssize_t I2c::WriteImpl(const void* data) {
-  return WriteMultiImpl<method>(data);
-}
-
-template <I2c::I2cMethod method>
-ssize_t I2c::WriteMultiImpl(const void* data) {
-  if constexpr (I2cMethod::kPlain == method) {  // I2C plain device, prefer
-
-    auto typed_data = static_cast<const i2c_rdwr_ioctl_data*>(data);
-    return PlainRW(typed_data);
-
-  } else if constexpr (I2cMethod::kSmbus == method) {  // I2C SMBUS
-
-    auto typed_data = static_cast<const i2c_rdwr_smbus_data*>(data);
-    return SmbusRW<false>(typed_data);  // false -> write cmd
-  }
-}
-
-template <I2c::I2cMethod method>
-ssize_t I2c::ReadImpl(void* data) {
-  return ReadMultiImpl<method>(data);
-}
-
-template <I2c::I2cMethod method>
-ssize_t I2c::ReadMultiImpl(void* data) {
-  if constexpr (I2cMethod::kPlain == method) {  // I2C plain device, prefer
-
-    auto typed_data = static_cast<i2c_rdwr_ioctl_data*>(data);
-    return PlainRW(typed_data);
-
-  } else if constexpr (I2cMethod::kSmbus == method) {  // I2C SMBUS
-
-    auto typed_data = static_cast<i2c_rdwr_smbus_data*>(data);
-    return SmbusRW<true>(typed_data);  // write for false
-  }
-}
-
 // i2c core functions
 int I2c::I2cOpen(const char* bus_name) {
   int fd;
@@ -143,5 +105,6 @@ uint32_t I2c::UpdateI2cSpeedOnPi() {
 }
 
 // destructor
+// safe ?
 I2c::~I2c() { I2cClose(fd_); }
 }  // namespace lra::bus
