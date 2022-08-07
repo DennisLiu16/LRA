@@ -101,7 +101,7 @@ class Tca9548a {
   ssize_t Modify(const uint8_t& addr, const uint8_t val, const uint8_t mask) {}
 
   // registers
-  constexpr static Register_8 CONTROL(0x0, 0x0);
+  constexpr static Register_8 CONTROL{0x0, 0x0};
 
  private:
   I2cAdapter adapter_;
