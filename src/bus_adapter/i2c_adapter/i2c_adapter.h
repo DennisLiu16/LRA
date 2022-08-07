@@ -356,7 +356,11 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
     return (base_iaddr + remain) > page_bytes ? page_bytes - base_iaddr : remain;
   };
 
-  static inline void I2cDelay(uint32_t us) { usleep(us); }
+  static inline void I2cDelay(uint32_t us) {
+#ifndef I2C_UNIT_TEST
+    usleep(us);
+#endif
+  }
 
   // check valid part of iaddr can be converted into (iaddr_bytes) type unsigned integral
   inline bool I2cInternalAddrCheck(const uint8_t& iaddr_bytes, const uint64_t& iaddr) {

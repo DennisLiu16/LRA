@@ -15,6 +15,10 @@ extern "C" {
 #include <memory>
 #include <string_view>
 
+#ifdef I2C_UNIT_TEST
+#include <spdlog/spdlog.h>
+#endif
+
 namespace lra::bus {
 
 struct I2cInit_S {
@@ -111,7 +115,22 @@ class I2c : public Bus<I2c> {
 
   template <typename T>
   requires std::same_as<std::remove_const_t<T>, i2c_rdwr_ioctl_data> ssize_t PlainRW(T* data) {
-    // if(!FdValid(fd_)) { // fd not valid, abort (cost about 3 us on Raspi) -> should check by user}
+#ifdef I2C_UNIT_TEST
+    spdlog::fmt_lib::print("In PlainRW\n");
+    spdlog::fmt_lib::print("nmsg: {}\n", data->nmsgs);
+    spdlog::fmt_lib::print("addr: {}\n", data->msgs[data->nmsgs - 1].addr);
+    spdlog::fmt_lib::print("flags: {}\n", data->msgs[data->nmsgs - 1].flags);
+    spdlog::fmt_lib::print("len: {}\n", data->msgs[data->nmsgs - 1].len);
+    spdlog::fmt_lib::print("buf: ");
+    if (data->nmsgs == 2) { // read
+      // generate fake data
+    }
+    for(uint16_t i = 0; i < data->msgs[data->nmsgs - 1].len; i++) {
+      spdlog::fmt_lib::print("{} ", *((data->msgs[data->nmsgs - 1].buf)+i));
+    }
+    spdlog::fmt_lib::print("\n\n");
+    return data->msgs[data->nmsgs - 1].len;
+#else
     if (ioctl(fd_, I2C_RDWR, (unsigned long)data) < 0) {
       return -1;
     }
@@ -120,6 +139,7 @@ class I2c : public Bus<I2c> {
     // write len == iaddr_bytes + size
     // read len  == size
     return data->msgs[data->nmsgs - 1].len;
+#endif
   }
 
   // https://git.kernel.org/pub/scm/utils/i2c-tools/i2c-tools.git/
@@ -127,8 +147,13 @@ class I2c : public Bus<I2c> {
      ask for less than 32 bytes, your code will only work with kernels
      2.6.23 and later. */
   // tempalte make compile size down
-  template <bool Read, typename T> requires std::same_as<std::remove_const_t<T>, i2c_rdwr_smbus_data>
-  ssize_t SmbusRW(T* data) {
+  template <bool Read, typename T>
+  requires std::same_as<std::remove_const_t<T>, i2c_rdwr_smbus_data> ssize_t SmbusRW(T* data) {
+#ifdef I2C_UNIT_TEST
+    spdlog::fmt_lib::print("In SmbusRW\n");
+    return data->len_;
+
+#else
     if (last_slave_addr_ != data->slave_addr_) {  // change to target slave device
       if (ioctl(fd_, I2C_SLAVE, data->slave_addr_) < 0) return -1;
       last_slave_addr_ = data->slave_addr_;
@@ -141,6 +166,7 @@ class I2c : public Bus<I2c> {
     } else {  // write
       return i2c_smbus_write_i2c_block_data(fd_, data->command_, data->len_, data->value_);
     }
+#endif
   }
 
   // i2c sub functions
