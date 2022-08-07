@@ -100,10 +100,14 @@ void I2c::I2cResetThisBus() {
 
 // i2c sub functions
 
-int32_t I2c::I2cUpdateThisBusFunc() {
-  int32_t funcs = -1;
+uint64_t I2c::I2cUpdateThisBusFunc() {
+  // CRITICAL: I2C_FUNCS is uint32_t, but should use uint64_t to get FUNCS
+  // https://www.kernel.org/doc/Documentation/i2c/dev-interface
+  // ioctl(file, I2C_FUNCS, unsigned long *funcs)
+  // if we use uint32_t, we get stack failed
+  uint64_t funcs = 0;
 
-  if (!ioctl(fd_, I2C_FUNCS, &funcs)) {  // failed
+  if (ioctl(fd_, I2C_FUNCS, &funcs)) {  // successful return 0
     return -1;
   }
 
@@ -111,8 +115,8 @@ int32_t I2c::I2cUpdateThisBusFunc() {
   return func_;
 }
 
-bool I2c::I2cUpdateFuncAndCompare(int32_t func) {
-  if (I2cUpdateThisBusFunc() < 0) return false;
+bool I2c::I2cUpdateFuncAndCompare(uint64_t func) {
+  if (I2cUpdateThisBusFunc() == 0) return false;
   return ((func_ & func) == func);
 }
 
