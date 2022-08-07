@@ -67,6 +67,15 @@ class BusAdapter {
     return val;
   }
 
+  // XXX: Assume nbytes < 256 (uint8_t)
+  void Integral2Array_BE(int16_t nbytes, std::integral auto val, uint8_t* buf) {
+    
+    while (!(--nbytes < 0)) {
+      *(buf + nbytes) = (uint8_t)val;
+      val >>= 8;
+    }
+  }
+
  private:
   BusAdapter() = default;
   friend T;

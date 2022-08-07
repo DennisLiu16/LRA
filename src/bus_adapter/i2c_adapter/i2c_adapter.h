@@ -110,6 +110,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
 
   // case 1. (register, single val)
   // XXX: assume all data can be writen at once
+  // FIX: force val type ==
   template <is_register T, std::integral U>
   ssize_t WriteImpl(const T& reg, const U& val) {
     // TODO: Write a function to decrease repeat code for write WriteImpl
@@ -133,7 +134,10 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
 
       uint16_t flags = info_.dev_info_->tenbit_ ? (info_.dev_info_->flags_ | I2C_M_TEN) : info_.dev_info_->flags_;
       // FIXME: U's type may be ullong for bitset converting problem
-      uint8_t tmp_buf[sizeof(U) + info_.dev_info_->iaddr_bytes_] = {0};  // integral size + iaddr len
+      // XXX: sizeof(U) != register's value len, leading miswrite other register.
+      // This is usually restricted by device layer (see tca.h)
+      // Use sizeof(typename T::val_t) instead of sizeof(U) to improve security
+      uint8_t tmp_buf[sizeof(typename T::val_t) + info_.dev_info_->iaddr_bytes_] = {0};  // integral size + iaddr len
 
       // copy iaddr to tmp_buf
       if (info_.dev_info_->iaddr_bytes_ <= 4) {
@@ -142,7 +146,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
         assert("iaddr_bytes > 4, no implementation found");
       }
 
-      RewriteIntegralToBigEndianArray(reg.bytelen_, val, tmp_buf + info_.dev_info_->iaddr_bytes_);  // tmp_buf with bias
+      Integral2Array_BE(reg.bytelen_, val, tmp_buf + info_.dev_info_->iaddr_bytes_);  // tmp_buf with bias
 
       /*
         tmp_buf completes
@@ -164,14 +168,14 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
         return 0;
       }
 
-      uint8_t tmp_buf[sizeof(U)] = {0};
+      uint8_t tmp_buf[sizeof(typename T::val_t)] = {0};
 
       i2c_rdwr_smbus_data smbus_data{.command_{(uint8_t)reg.addr_},
-                                     .len_{sizeof(U)},
+                                     .len_{sizeof(tmp_buf)},
                                      .slave_addr_{(uint8_t)info_.dev_info_->addr_},
                                      .value_{tmp_buf}};
 
-      RewriteIntegralToBigEndianArray(reg.bytelen_, val, tmp_buf);
+      Integral2Array_BE(reg.bytelen_, val, tmp_buf);
 
       ret_size = info_.bus_->WriteMulti<I2c::I2cMethod::kSmbus>(&smbus_data);
 
@@ -210,13 +214,16 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
     }
 
     ssize_t ret_size = 0;
-    uint8_t tmp_buf[sizeof(U)] = {0};
+    uint8_t tmp_buf[sizeof(T::val_t)] = {0};
 
     if (info_.method_ == I2c::I2cMethod::kPlain) {
       if (I2cPlainCheckFail()) {
         // TODO: Log: use plain to communicate with 10 bits address, waiting for implementation
         return 0;
       }
+
+      // FIXME: no iaddr
+
       struct i2c_msg ioctl_msg[2];
       struct i2c_rdwr_ioctl_data ioctl_data {
         .msgs{ioctl_msg}, .nmsgs { 2 }
@@ -252,7 +259,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
       }
 
       i2c_rdwr_smbus_data smbus_data{.command_{(uint8_t)reg.addr_},
-                                     .len_{sizeof(U)},
+                                     .len_{sizeof(tmp_buf)},
                                      .slave_addr_{(uint8_t)info_.dev_info_->addr_},
                                      .value_{tmp_buf}};
 
@@ -361,9 +368,6 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
   bool I2cSmbusCheckFail();
 
   bool I2cPlainCheckFail();
-
-  // TODO: move to bus_adapter.h
-  void RewriteIntegralToBigEndianArray(uint8_t nbytes, std::integral auto& val, void* buf);
 };
 
 }  // namespace lra::bus_adapter::i2c

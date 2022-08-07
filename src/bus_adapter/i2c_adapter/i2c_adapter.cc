@@ -211,8 +211,8 @@ void I2cAdapter::I2cInternalAddrConvert(uint32_t iaddr, uint8_t nbyte, uint8_t* 
   convert.iaddr = htonl(iaddr);
 
   /* Copy address to addr buffer */
-  uint8_t i = nbyte - 1;
-  uint8_t j = 3;
+  int16_t i = nbyte - 1;
+  int16_t j = 3;
 
   while (i >= 0 && j >= 0) {
     to_buf[i--] = convert.caddr[j--];
@@ -230,15 +230,6 @@ bool I2cAdapter::I2cPlainCheckFail() {
   // bus has I2C function
   // user choose Plain R/W
   // TODO: add len check (__u16)
-  return (info_.bus_->func_ & I2C_FUNC_I2C) && (info_.method_ == I2c::I2cMethod::kPlain);
+  return !(info_.bus_->func_ & I2C_FUNC_I2C);
 }
-
-// XXX: Assume nbytes < 256 (< uint8_t)
-void RewriteIntegralToBigEndianArray(int16_t nbytes, std::integral auto& val, void* buf) {
-  while (!(nbytes-- < 0)) {
-    *(buf + nbytes) = (uint8_t)val;
-    val >>= 8;
-  }
-}
-
 }  // namespace lra::bus_adapter::i2c
