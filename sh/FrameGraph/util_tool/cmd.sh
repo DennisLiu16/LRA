@@ -1,6 +1,8 @@
 # $1: program name
 # you should run this sh in data folder
 
+# run your program first
+
 pid=$(pidof $1)
 
 if [ -z "$pid" ]
@@ -11,10 +13,10 @@ else
     echo -e "pid of $1 is: $pid"
 fi
 
-sampling_rate=1000
+sampling_rate=10000
 echo "sampling rate is: $sampling_rate (Hz)"
 
-monitor_time=60
+monitor_time=30
 echo "monitor time is: $monitor_time (s)"
 
 time=$(date +"%T")
