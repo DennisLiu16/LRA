@@ -90,10 +90,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3 -fPIC")  # O3 optimization, close asse
 set(CMAKE_C_FLAGS "-Wall")
 
 # C compiler DEBUG parameters
-set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG -O0")
+set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG -O0 -fPIC")
 
 # C compiler RELEASE parameters
-set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")
+set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3 -fPIC")
 
 # set default build type
 set(default_build_type "Release")
