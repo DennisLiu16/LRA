@@ -28,15 +28,20 @@ int main() {
   // I2cAdapter init struct
   I2cAdapter_S init_s;
   init_s.bus_ = std::make_shared<I2c>(i2c);
-  init_s.delay_ = 50;
+  init_s.delay_ = 0;
   init_s.method_ = I2c::I2cMethod::kPlain;
   init_s.name_ = "tca";
 
-  Tca9548a tca(info);
-  tca.Init(init_s);
+  /*test Plain 400k*/
 
-  // auto start = std::chrono::high_resolution_clock::now();
-  while (true) tca.Write(tca.CONTROL, 0x1);  // write ok
-  // auto end = std::chrono::high_resolution_clock::now();
-  // printf("%ld\n", (end-start).count());
+  Tca9548a tca(info);  // info_ = info
+  tca.Init(init_s);    // init internal member I2cAdapter with public member info_
+
+  auto start = std::chrono::high_resolution_clock::now();
+  
+  tca.Write(tca.CONTROL.addr_, {0x2, 0x4});  // write std::initializer ok
+  tca.Write(tca.CONTROL, 0x1);               // write std::initializer ok, test delay also (0 delay is ok)
+
+  auto end = std::chrono::high_resolution_clock::now();
+  printf("%ld\n", (end - start).count());
 }
