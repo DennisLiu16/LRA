@@ -67,6 +67,9 @@ typedef struct I2cAdapterInit_S {  // Restore an I2C device's properties and bus
 
   I2cAdapterInit_S& operator=(const I2cAdapterInit_S& other) = default;  // copy assignment
   I2cAdapterInit_S& operator=(I2cAdapterInit_S&& other) = default;       // move assignment
+
+  I2cAdapterInit_S() = default;                                // for user create simple object
+  I2cAdapterInit_S(const I2cAdapterInit_S& init_s) = default;  // for device.Init()
 } I2cAdapter_S;
 
 /**

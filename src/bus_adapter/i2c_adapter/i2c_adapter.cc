@@ -5,7 +5,8 @@
 namespace lra::bus_adapter::i2c {
 
 bool I2cAdapter::InitImpl(const char* adapter_name) {
-  I2cAdapterInit_S s{.name_ = adapter_name};
+  I2cAdapterInit_S s;
+  s.name_ = adapter_name;
   info_ = std::move(s);
   logunit_ = ::lra::log_util::LogUnit::CreateLogUnit(info_.name_);
   return true;
