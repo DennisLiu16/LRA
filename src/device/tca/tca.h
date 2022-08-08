@@ -7,6 +7,7 @@
 
 // SUM
 // 1. has dynamic type at compile time by using typename T::typedef ...
+// 2. don't use reference in integral type args in first layer interface
 
 namespace lra::device {
 
@@ -21,7 +22,7 @@ class Tca9548a {
   // functions
 
   /**
-   * @brief init i2c adapter
+   * @brief copy a init struct to init i2c adapter
    *
    * @return true
    * @return false
@@ -37,8 +38,8 @@ class Tca9548a {
    * @param val type restrict to integral / same_as<decltype(reg.dv_)>
    * @return ssize_t (successed) ? 1 : error_code
    */
-  template <is_register T, typename U> // not <..., std::integral U>
-  requires same_as_dv<T, U> || std::integral<U> ssize_t Write(const T& reg, const U& val) {
+  template <is_register T, typename U>  // not <..., std::integral U>
+  requires same_as_dv<T, U> || std::integral<U> ssize_t Write(const T& reg, const U val) {
     if (IsNegative(val)) {  // restrict value not negative
       // TODO: LogGlobal(spdlog::level::debug, "reg val: {} is negative\n", );
       return std::to_underlying(Errors::kWrite);
@@ -46,15 +47,20 @@ class Tca9548a {
 
     // perfect forward to adapter write interface
     // XXX:should always convert to correct type if you want to use bitset (it's related to tmp_buf size -> may crush)
-    ssize_t ret = adapter_.Write(reg, is_bitset<U> ? (typename T::val_t)val.to_ullong() : val);
-    return (ret > 0) ? 1 : ret;
+    // It's ok to pass oversize val now (check in i2c_adapter layer), that is we don't need to write something like 
+    // ret = adapter_.Write(reg, (tpyename T::val_t)val);
+
+    if constexpr (is_register<U>)
+      return adapter_.Write(reg, val.to_ullong());
+    else
+      return adapter_.Write(reg, val);
   }
 
   // TODO: V2 - write multiple registers, e.g. Write(start_reg, {bitset<8>, bitset<64>})
 
   // write 1 or multiple bytes that starts from addr in array form
   // return n bytes
-  ssize_t Write(const uint8_t& addr, const uint8_t* val, const uint32_t& len);
+  ssize_t Write(const uint8_t addr, const uint8_t* val, const uint32_t len);
 
   // write 1 byte to addr with val (uint8_t) or multiple bytes that starts from addr in std::vector<uint8_t> form
   template <typename T>
@@ -67,9 +73,10 @@ class Tca9548a {
 
   // initializer_list has no type so it's not allowed to deduced in template. We must use initializer_list to avoid
   // deduced
+  // FIXME: can't use (reg.addr, {0x1,0x2}); -> const uint8_t& to const uint8_t
   template <std::integral T>
-  ssize_t Write(const uint8_t& addr, const std::initializer_list<T>& list) {
-    std::vector<uint8_t> vec = list;
+  ssize_t Write(const uint8_t addr, const std::initializer_list<T>& list) {
+    const std::vector<uint8_t> vec = list;
     return Write(addr, vec);
   }
 
@@ -85,20 +92,20 @@ class Tca9548a {
   }
 
   // read one byte from addr
-  int16_t Read(const uint8_t& addr);
+  int16_t Read(const uint8_t addr);
 
   // read multiple bytes to an array, or use vector.data()
   // val type: uint8_t or vector<uint8_t>& -> create a vector and reserve to len
-  ssize_t Read(const uint8_t& addr, uint8_t* val, const uint16_t& len);
+  ssize_t Read(const uint8_t addr, uint8_t* val, const uint16_t len);
 
   // user overloading (optional)
   // RVO only works if you call:
   // auto result = Read(addr, len);
   // in your source code
-  std::vector<uint8_t> Read(const uint8_t& addr, const uint16_t& len);
+  std::vector<uint8_t> Read(const uint8_t addr, const uint16_t len);
 
   // single byte modify, device define
-  ssize_t Modify(const uint8_t& addr, const uint8_t val, const uint8_t mask) {}
+  // ssize_t Modify(const uint8_t addr, const uint8_t val, const uint8_t mask);
 
   // registers
   constexpr static Register_8 CONTROL{0x0, 0x0};
