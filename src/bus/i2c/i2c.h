@@ -27,6 +27,7 @@ struct I2cInit_S {
 
 // corresponding type for smbus to i2c_rdwr_ioctl_data
 struct i2c_rdwr_smbus_data {
+  bool no_internal_reg{false};
   uint8_t command_{0x0};   // internal register address, smbus only allow __u8
   uint8_t len_{0};         // max 32
   uint8_t slave_addr_{0};  // only allow 7-bit address
@@ -160,7 +161,7 @@ class I2c : public Bus<I2c> {
     }
 
     if constexpr (Read) {  // read
-      // TODO: Add byte / word version
+      // TODO: Add byte / word version for no internal address device
       return i2c_smbus_read_i2c_block_data(fd_, data->command_, data->len_, data->value_);
 
     } else {  // write

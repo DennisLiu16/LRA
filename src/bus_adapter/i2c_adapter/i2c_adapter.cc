@@ -60,9 +60,12 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const uint8_t* val, const u
       return 0;
     }
 
-    i2c_rdwr_smbus_data smbus_data{
-        // XXX: const_cast
-        .command_{(uint8_t)iaddr}, .len_{len}, .slave_addr_{(uint8_t)info_.dev_info_->addr_}, .value_{const_cast<uint8_t*>(val)}};
+    i2c_rdwr_smbus_data smbus_data{// XXX: const_cast
+                                   .no_internal_reg{(info_.dev_info_->iaddr_bytes_) ? false : true},
+                                   .command_{(uint8_t)iaddr},
+                                   .len_{len},
+                                   .slave_addr_{(uint8_t)info_.dev_info_->addr_},
+                                   .value_{const_cast<uint8_t*>(val)}};
 
     ret_size = info_.bus_->WriteMulti<I2c::I2cMethod::kSmbus>(&smbus_data);
   } else
@@ -115,7 +118,8 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const std::vector<uint8_t>&
       return 0;
     }
 
-    i2c_rdwr_smbus_data smbus_data{.command_{(uint8_t)iaddr},
+    i2c_rdwr_smbus_data smbus_data{.no_internal_reg{(info_.dev_info_->iaddr_bytes_) ? false : true},
+                                   .command_{(uint8_t)iaddr},
                                    .len_{val.size()},
                                    .slave_addr_{(uint8_t)info_.dev_info_->addr_},
                                    // XXX: const_cast
@@ -182,7 +186,8 @@ ssize_t I2cAdapter::ReadImpl(const int64_t& iaddr, uint8_t* val, const uint16_t&
       return 0;
     }
 
-    i2c_rdwr_smbus_data smbus_data{.command_{(uint8_t)iaddr},
+    i2c_rdwr_smbus_data smbus_data{.no_internal_reg{(info_.dev_info_->iaddr_bytes_) ? false : true},
+                                   .command_{(uint8_t)iaddr},
                                    .len_{len},
                                    .slave_addr_{(uint8_t)info_.dev_info_->addr_},
                                    .value_{val}};

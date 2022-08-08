@@ -77,7 +77,8 @@
         "span": "cpp",
         "ranges": "cpp",
         "any": "cpp",
-        "i2c.h": "c"
+        "i2c.h": "c",
+        "types.h": "c"
     },
     "svg.preview.background": "custom",
 
