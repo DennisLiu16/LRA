@@ -25,6 +25,8 @@ echo "start at: $time"
 sudo perf record -F $sampling_rate -p $pid -g -o in-fb.data -- sleep $monitor_time
 sudo perf script -i in-fb.data > in-fb.perf
 
+echo "data processing..."
+
 /opt/FlameGraph/stackcollapse-perf.pl in-fb.perf > in-fb.folded
 /opt/FlameGraph/flamegraph.pl in-fb.folded > "$1_$time.svg"
 
