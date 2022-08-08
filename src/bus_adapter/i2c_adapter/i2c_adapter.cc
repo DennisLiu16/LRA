@@ -20,7 +20,7 @@ bool I2cAdapter::InitImpl(const I2cAdapterInit_S& init_s) {
 
 // case 2
 // val won't be modified because const will be declaration in next layer (in bus/i2c.h) WriteMultiImpl
-ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, uint8_t* val, const uint16_t len) {
+ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const uint8_t* val, const uint16_t len) {
   if (!I2cInternalAddrCheck(info_.dev_info_->iaddr_bytes_, iaddr)) {
     // TODO:Logerr(addr len > dev_info_->iaddr_bytes_);
     return 0;
@@ -61,7 +61,8 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, uint8_t* val, const uint16_
     }
 
     i2c_rdwr_smbus_data smbus_data{
-        .command_{(uint8_t)iaddr}, .len_{len}, .slave_addr_{(uint8_t)info_.dev_info_->addr_}, .value_{val}};
+        // XXX: const_cast
+        .command_{(uint8_t)iaddr}, .len_{len}, .slave_addr_{(uint8_t)info_.dev_info_->addr_}, .value_{const_cast<uint8_t*>(val)}};
 
     ret_size = info_.bus_->WriteMulti<I2c::I2cMethod::kSmbus>(&smbus_data);
   } else
@@ -75,7 +76,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, uint8_t* val, const uint16_
 }
 
 // case 3. (addr, vector)
-ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, std::vector<uint8_t>& val) {
+ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const std::vector<uint8_t>& val) {
   if (!I2cInternalAddrCheck(info_.dev_info_->iaddr_bytes_, iaddr)) {
     // TODO:Logerr(addr len > dev_info_->iaddr_bytes_);
     return 0;
@@ -117,7 +118,8 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, std::vector<uint8_t>& val) 
     i2c_rdwr_smbus_data smbus_data{.command_{(uint8_t)iaddr},
                                    .len_{val.size()},
                                    .slave_addr_{(uint8_t)info_.dev_info_->addr_},
-                                   .value_{val.data()}};
+                                   // XXX: const_cast
+                                   .value_{const_cast<uint8_t*>(val.data())}};
 
     ret_size = info_.bus_->WriteMulti<I2c::I2cMethod::kSmbus>(&smbus_data);
   } else

@@ -195,11 +195,11 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
 
   // case 2. (iaddr, val*, len)
   // val won't be modified because const will be declaration in next layer (in bus/i2c.h)
-  ssize_t WriteImpl(const uint64_t& iaddr, uint8_t* val, const uint16_t len);
+  ssize_t WriteImpl(const uint64_t& iaddr, const uint8_t* val, const uint16_t len);
 
   // case 3. (iaddr, vector)
   // val won't be modified because const will be declaration in next layer (in bus/i2c.h)
-  ssize_t WriteImpl(const uint64_t& iaddr, std::vector<uint8_t>& val);
+  ssize_t WriteImpl(const uint64_t& iaddr, const std::vector<uint8_t>& val);
 
   /**
    * read function related interface
