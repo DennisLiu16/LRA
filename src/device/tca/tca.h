@@ -47,7 +47,7 @@ class Tca9548a {
 
     // perfect forward to adapter write interface
     // XXX:should always convert to correct type if you want to use bitset (it's related to tmp_buf size -> may crush)
-    // It's ok to pass oversize val now (check in i2c_adapter layer), that is we don't need to write something like 
+    // It's ok to pass oversize val now (check in i2c_adapter layer), that is we don't need to write something like
     // ret = adapter_.Write(reg, (tpyename T::val_t)val);
 
     if constexpr (is_register<U>)
@@ -68,14 +68,17 @@ class Tca9548a {
                                                                                                   const T& val) {
     // val will never be negative number
     // Write(const uint8_t&, const std::vector<uint8_t>& / const uint8_t& )
-    return adapter_.Write(addr, std::convertible_to<T, uint8_t> ? (uint8_t)val : val);
+    if constexpr (std::convertible_to<T, uint8_t>)
+      return adapter_.Write(addr, (uint8_t)val);
+    else
+      return adapter_.Write(addr, val);
   }
 
   // initializer_list has no type so it's not allowed to deduced in template. We must use initializer_list to avoid
   // deduced
-  // FIXME: can't use (reg.addr, {0x1,0x2}); -> const uint8_t& to const uint8_t
-  template <std::integral T>
-  ssize_t Write(const uint8_t addr, const std::initializer_list<T>& list) {
+  // template <std::integral T>
+  ssize_t Write(const uint8_t addr, const std::initializer_list<uint8_t>& list) {
+    // Can't convert std::initializer_list<int> to std::vector<uint8_t>
     const std::vector<uint8_t> vec = list;
     return Write(addr, vec);
   }
