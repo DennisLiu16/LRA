@@ -360,6 +360,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
   };
 
   static inline void I2cDelay(uint32_t us) {
+    if (us == 0) return;
 #ifndef I2C_UNIT_TEST
     usleep(us);
 #endif
