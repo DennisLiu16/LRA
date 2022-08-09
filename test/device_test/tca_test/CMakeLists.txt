@@ -7,8 +7,9 @@ add_executable(lra_device_test_tca ${SRC})
 
 target_include_directories(
   lra_device_test_tca 
-  PUBLIC 
+  PRIVATE 
   lra_device_tca
 )
 
-target_link_libraries(lra_device_test_tca PUBLIC lra_device_tca)
+target_link_libraries(lra_device_test_tca PRIVATE lra_device_tca)
+# target_compile_options(lra_device_test_tca PRIVATE -E)
