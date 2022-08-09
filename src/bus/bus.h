@@ -1,6 +1,7 @@
 #ifndef LRA_BUS_H_
 #define LRA_BUS_H_
 
+#include <assert.h>
 #include <fcntl.h>
 #include <memory/registers/registers.h>
 #include <sys/ioctl.h>
@@ -22,7 +23,6 @@ class Bus {
   // CRTP interface
 
   // make Method enum in every bus class, and pass them as first template param
-
 
   template <typename... Args>
   bool Init(Args&&... args) {
