@@ -96,6 +96,8 @@ class I2c : public Bus<I2c> {
   }
 
   // vars
+  // I2C_SLAVE is independent for each open fd:
+  // https://stackoverflow.com/questions/41172797/linuxs-i2c-dev-interface-with-multiple-processes
   uint16_t last_slave_addr_{0};
 
   // i2c core function
