@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             // "program": "/home/ubuntu/LRA/build/test/i2c/i2c_test",
-            "program": "/home/ubuntu/LRA/build/test/i2c_unit_test/lra_i2c_unit_test",
+            "program": "/home/ubuntu/LRA/build/test/device_test/tca_test/lra_device_test_tca",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
