@@ -11,7 +11,7 @@ namespace lra::device {
 struct I2cDeviceInfo {       // total: 8 bytes (2 byte alignment)
   bool tenbit_{false};       // I2C is 10 bit device address
   uint8_t iaddr_bytes_{1};   // I2C device internal(word) address bytes, such as: 24C04 1 byte, 24C64 2 bytes
-                             // subaddress(register) len
+                             // subaddress(register) len, if no internal address, (e.g. TCA9548A), just set it to 0
                              // ref: https://ithelp.ithome.com.tw/m/articles/10274116
                              // ref: https://blog.csdn.net/euxnijuoh/article/details/53334323
   uint16_t addr_{0x0};       // I2C device(slave) address, 7 or 10 bits
