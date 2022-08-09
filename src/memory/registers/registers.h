@@ -31,6 +31,7 @@ struct Register {
   constexpr Register(const uint64_t &addr, const uint8_t &bytelen) : addr_(addr), bytelen_(bytelen) {}
   // for unordered_map
   bool operator==(const Register &rhs) const { return addr_ == rhs.addr_ && bytelen_ == rhs.bytelen_; }
+  uint64_t operator()() const{return addr_;}
 };
 
 /**
