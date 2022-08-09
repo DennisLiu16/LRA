@@ -152,31 +152,43 @@ ssize_t I2cAdapter::ReadImpl(const int64_t& iaddr, uint8_t* val, const uint16_t&
       // TODO: Log: use plain to communicate with 10 bits address, waiting for implementation
       return 0;
     }
-    struct i2c_msg ioctl_msg[2];
-    struct i2c_rdwr_ioctl_data ioctl_data {
-      .msgs{ioctl_msg}, .nmsgs { 2 }
-    };
 
     uint16_t flags = info_.dev_info_->tenbit_ ? (info_.dev_info_->flags_ | I2C_M_TEN) : info_.dev_info_->flags_;
-    uint8_t converted_iaddr[info_.dev_info_->iaddr_bytes_] = {0};
 
-    if (info_.dev_info_->iaddr_bytes_ <= 4) {
-      I2cInternalAddrConvert(iaddr, info_.dev_info_->iaddr_bytes_, converted_iaddr);
+    struct i2c_msg ioctl_msg[2]{0};
+    struct i2c_rdwr_ioctl_data ioctl_data {
+      .msgs { ioctl_msg }
+    };
+
+    if (info_.dev_info_->iaddr_bytes_ > 0) {  // has internal address
+
+      uint8_t converted_iaddr[info_.dev_info_->iaddr_bytes_] = {0};
+
+      if (info_.dev_info_->iaddr_bytes_ <= 4) {
+        I2cInternalAddrConvert(iaddr, info_.dev_info_->iaddr_bytes_, converted_iaddr);
+      } else {
+        assert(info_.dev_info_->iaddr_bytes_ <= 4 && "iaddr_bytes > 4, no implementation found");
+      }
+
+      // write internal address
+      ioctl_msg[0].len = info_.dev_info_->iaddr_bytes_;
+      ioctl_msg[0].addr = info_.dev_info_->addr_;
+      ioctl_msg[0].buf = converted_iaddr;
+      ioctl_msg[0].flags = flags;
+
+      // read data
+      ioctl_msg[1].len = len;
+      ioctl_msg[1].addr = info_.dev_info_->addr_;
+      ioctl_msg[1].buf = val;
+      ioctl_msg[1].flags = flags | I2C_M_RD;
+      ioctl_data.nmsgs = 2;
     } else {
-      assert("iaddr_bytes > 4, no implementation found");
+      ioctl_msg[0].len = len;
+      ioctl_msg[0].addr = info_.dev_info_->addr_;
+      ioctl_msg[0].buf = val;
+      ioctl_msg[0].flags = flags | I2C_M_RD;
+      ioctl_data.nmsgs = 1;
     }
-
-    // write internal address
-    ioctl_msg[0].len = info_.dev_info_->iaddr_bytes_;
-    ioctl_msg[0].addr = info_.dev_info_->addr_;
-    ioctl_msg[0].buf = converted_iaddr;
-    ioctl_msg[0].flags = flags;
-
-    // read data
-    ioctl_msg[1].len = len;
-    ioctl_msg[1].addr = info_.dev_info_->addr_;
-    ioctl_msg[1].buf = val;
-    ioctl_msg[1].flags = flags | I2C_M_RD;
 
     ret_size = info_.bus_->ReadMulti<I2c::I2cMethod::kPlain>(&ioctl_data);
 
