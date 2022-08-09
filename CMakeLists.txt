@@ -50,6 +50,7 @@ if(NOT WIN32)
 endif()
 
 set(CMAKE_CXX_COMPILER "/usr/bin/g++-11")
+# set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 set(CMAKE_C_COMPILER "/usr/bin/gcc")
 
 message(STATUS ${CMAKE_CXX_COMPILER})
