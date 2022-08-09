@@ -36,9 +36,6 @@
 // usgae i2c_smbus_... https://www.cnblogs.com/lknlfy/p/3265122.html
 // https://stackoverflow.com/questions/61657749/cant-compile-i2c-smbus-write-byte-on-raspberry-pi-4
 
-// TODO Note: what is slave address and register internal addressx
-// TODO Note: do some driver check
-
 // This layer is for the purposes of
 // 1. delay after R/W
 // 2. build data struct transfer to bus
@@ -83,8 +80,6 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
   // members
   I2cAdapter_S info_;
 
-  // TODO: Factory with shared_ptr
-
  private:
   friend BusAdapter;
 
@@ -113,7 +108,6 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
 
   // case 1. (register, single val)
   // XXX: assume all data can be writen at once
-  // FIX: force val type ==
   template <is_register T, std::integral U>
   ssize_t WriteImpl(const T& reg, const U& val) {
     // TODO: Write a function to decrease repeat code for write WriteImpl
@@ -146,7 +140,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
       if (info_.dev_info_->iaddr_bytes_ <= 4) {
         I2cInternalAddrConvert(reg.addr_, info_.dev_info_->iaddr_bytes_, tmp_buf);
       } else {
-        assert("iaddr_bytes > 4, no implementation found");
+        assert(info_.dev_info_->iaddr_bytes_ <= 4 && "iaddr_bytes > 4, no implementation found");
       }
 
       Integral2Array_BE(reg.bytelen_, val, tmp_buf + info_.dev_info_->iaddr_bytes_);  // tmp_buf with bias
@@ -173,7 +167,8 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
 
       uint8_t tmp_buf[sizeof(typename T::val_t)] = {0};
 
-      i2c_rdwr_smbus_data smbus_data{.command_{(uint8_t)reg.addr_},
+      i2c_rdwr_smbus_data smbus_data{.no_internal_reg_{(info_.dev_info_->iaddr_bytes_) ? false : true},
+                                     .command_{(uint8_t)reg.addr_},
                                      .len_{sizeof(tmp_buf)},
                                      .slave_addr_{(uint8_t)info_.dev_info_->addr_},
                                      .value_{tmp_buf}};
@@ -183,7 +178,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
       ret_size = info_.bus_->WriteMulti<I2c::I2cMethod::kSmbus>(&smbus_data);
 
     } else {
-      assert("I2C method unset");
+      assert(false && "I2C method unset");
     }
 
     // delay if succeeded
@@ -217,7 +212,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
     }
 
     ssize_t ret_size = 0;
-    uint8_t tmp_buf[sizeof(T::val_t)] = {0};
+    uint8_t tmp_buf[sizeof(typename T::val_t)] = {0};
 
     if (info_.method_ == I2c::I2cMethod::kPlain) {
       if (I2cPlainCheckFail()) {
@@ -261,7 +256,8 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
         return 0;
       }
 
-      i2c_rdwr_smbus_data smbus_data{.command_{(uint8_t)reg.addr_},
+      i2c_rdwr_smbus_data smbus_data{.no_internal_reg_{(info_.dev_info_->iaddr_bytes_) ? false : true},
+                                     .command_{(uint8_t)reg.addr_},
                                      .len_{sizeof(tmp_buf)},
                                      .slave_addr_{(uint8_t)info_.dev_info_->addr_},
                                      .value_{tmp_buf}};
@@ -269,7 +265,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
       ret_size = info_.bus_->ReadMulti<I2c::I2cMethod::kSmbus>(&smbus_data);
 
     } else {
-      assert("I2C method unset");
+      assert(false && "I2C method unset");
     }
 
     if (ret_size == sizeof(tmp_buf)) {  // ret_size of plain and smbus should be same in read mode
@@ -332,7 +328,8 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
         return 0;
       }
 
-      i2c_rdwr_smbus_data smbus_data{.command_{(uint8_t)iaddr},
+      i2c_rdwr_smbus_data smbus_data{.no_internal_reg_{(info_.dev_info_->iaddr_bytes_) ? false : true},
+                                     .command_{(uint8_t)iaddr},
                                      .len_{sizeof(uint8_t)},
                                      .slave_addr_{(uint8_t)info_.dev_info_->addr_},
                                      .value_{&val}};
@@ -340,7 +337,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
       ret_size = info_.bus_->ReadMulti<I2c::I2cMethod::kSmbus>(&smbus_data);
 
     } else {
-      assert("I2C method unset");
+      assert(false && "I2C method unset");
     }
 
     if (ret_size == sizeof(uint8_t)) {

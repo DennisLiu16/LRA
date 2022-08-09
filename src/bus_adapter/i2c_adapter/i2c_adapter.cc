@@ -42,7 +42,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const uint8_t* val, const u
     if (info_.dev_info_->iaddr_bytes_ <= 4) {
       I2cInternalAddrConvert(iaddr, info_.dev_info_->iaddr_bytes_, tmp_buf);
     } else {
-      assert("iaddr_bytes > 4, no implementation found");
+      assert(info_.dev_info_->iaddr_bytes_ <= 4 && "iaddr_bytes > 4, no implementation found");
     }
 
     // XXX:copy val to tmp_buf
@@ -61,7 +61,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const uint8_t* val, const u
     }
 
     i2c_rdwr_smbus_data smbus_data{// XXX: const_cast
-                                   .no_internal_reg{(info_.dev_info_->iaddr_bytes_) ? false : true},
+                                   .no_internal_reg_{(info_.dev_info_->iaddr_bytes_) ? false : true},
                                    .command_{(uint8_t)iaddr},
                                    .len_{len},
                                    .slave_addr_{(uint8_t)info_.dev_info_->addr_},
@@ -69,7 +69,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const uint8_t* val, const u
 
     ret_size = info_.bus_->WriteMulti<I2c::I2cMethod::kSmbus>(&smbus_data);
   } else
-    assert("I2C method unset");
+    assert(false && "I2C method unset");
 
   // delay ...
   // XXX: ret_size condi?
@@ -100,7 +100,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const std::vector<uint8_t>&
     if (info_.dev_info_->iaddr_bytes_ <= 4) {
       I2cInternalAddrConvert(iaddr, info_.dev_info_->iaddr_bytes_, tmp_buf);
     } else {
-      assert("iaddr_bytes > 4, no implementation found");
+      assert(info_.dev_info_->iaddr_bytes_ <= 4 && "iaddr_bytes > 4, no implementation found");
     }
 
     // XXX:copy val to tmp_buf
@@ -118,7 +118,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const std::vector<uint8_t>&
       return 0;
     }
 
-    i2c_rdwr_smbus_data smbus_data{.no_internal_reg{(info_.dev_info_->iaddr_bytes_) ? false : true},
+    i2c_rdwr_smbus_data smbus_data{.no_internal_reg_{(info_.dev_info_->iaddr_bytes_) ? false : true},
                                    .command_{(uint8_t)iaddr},
                                    .len_{val.size()},
                                    .slave_addr_{(uint8_t)info_.dev_info_->addr_},
@@ -127,7 +127,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const std::vector<uint8_t>&
 
     ret_size = info_.bus_->WriteMulti<I2c::I2cMethod::kSmbus>(&smbus_data);
   } else
-    assert("I2C method unset");
+    assert(false && "I2C method unset");
 
   // delay if succeeded
   // XXX: ret_size condi?
@@ -186,7 +186,7 @@ ssize_t I2cAdapter::ReadImpl(const int64_t& iaddr, uint8_t* val, const uint16_t&
       return 0;
     }
 
-    i2c_rdwr_smbus_data smbus_data{.no_internal_reg{(info_.dev_info_->iaddr_bytes_) ? false : true},
+    i2c_rdwr_smbus_data smbus_data{.no_internal_reg_{(info_.dev_info_->iaddr_bytes_) ? false : true},
                                    .command_{(uint8_t)iaddr},
                                    .len_{len},
                                    .slave_addr_{(uint8_t)info_.dev_info_->addr_},
@@ -195,7 +195,7 @@ ssize_t I2cAdapter::ReadImpl(const int64_t& iaddr, uint8_t* val, const uint16_t&
     ret_size = info_.bus_->ReadMulti<I2c::I2cMethod::kSmbus>(&smbus_data);
 
   } else {
-    assert("I2C method unset");
+    assert(false && "I2C method unset");
   }
 
   // FIXME: if len > 32, ret_size == 32, fix this later

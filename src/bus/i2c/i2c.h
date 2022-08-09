@@ -27,7 +27,7 @@ struct I2cInit_S {
 
 // corresponding type for smbus to i2c_rdwr_ioctl_data
 struct i2c_rdwr_smbus_data {
-  bool no_internal_reg{false};
+  bool no_internal_reg_{false};
   uint8_t command_{0x0};   // internal register address, smbus only allow __u8
   uint8_t len_{0};         // max 32
   uint8_t slave_addr_{0};  // only allow 7-bit address
@@ -123,11 +123,11 @@ class I2c : public Bus<I2c> {
     spdlog::fmt_lib::print("flags: {}\n", data->msgs[data->nmsgs - 1].flags);
     spdlog::fmt_lib::print("len: {}\n", data->msgs[data->nmsgs - 1].len);
     spdlog::fmt_lib::print("buf: ");
-    if (data->nmsgs == 2) { // read
+    if (data->nmsgs == 2) {  // read
       // generate fake data
     }
-    for(uint16_t i = 0; i < data->msgs[data->nmsgs - 1].len; i++) {
-      spdlog::fmt_lib::print("{} ", *((data->msgs[data->nmsgs - 1].buf)+i));
+    for (uint16_t i = 0; i < data->msgs[data->nmsgs - 1].len; i++) {
+      spdlog::fmt_lib::print("{} ", *((data->msgs[data->nmsgs - 1].buf) + i));
     }
     spdlog::fmt_lib::print("\n\n");
     return data->msgs[data->nmsgs - 1].len;
