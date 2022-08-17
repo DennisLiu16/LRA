@@ -31,7 +31,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const uint8_t* val, const u
   // deal with datas
   if (info_.method_ == I2c::I2cMethod::kPlain) {
     if (I2cPlainCheckFail()) {
-      // TODO: Log: use plain to communicate with 10 bits address, waiting for implementation
+      // TODO: LogToAll: use plain to communicate with 10 bits address, waiting for implementation
       return 0;
     }
 
@@ -39,7 +39,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const uint8_t* val, const u
 
   } else if (info_.method_ == I2c::I2cMethod::kSmbus) {
     if (I2cSmbusCheckFail()) {  // smbus check failed
-      // TODO: Log: use smbus to communicate with 10 bits address, waiting for implementation
+      // TODO: LogToAll: use smbus to communicate with 10 bits address, waiting for implementation
       return 0;
     }
 
@@ -72,7 +72,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const std::vector<uint8_t>&
 
   if (info_.method_ == I2c::I2cMethod::kPlain) {
     if (I2cPlainCheckFail()) {
-      // TODO: Log: use plain to communicate with 10 bits address, waiting for implementation
+      // TODO: LogToAll: use plain to communicate with 10 bits address, waiting for implementation
       return 0;
     }
 
@@ -80,7 +80,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const std::vector<uint8_t>&
 
   } else if (info_.method_ == I2c::I2cMethod::kSmbus) {
     if (I2cSmbusCheckFail()) {  // smbus check failed
-      // TODO: Log: use smbus to communicate with 10 bits address, waiting for implementation
+      // TODO: LogToAll: use smbus to communicate with 10 bits address, waiting for implementation
       return 0;
     }
 
@@ -116,7 +116,7 @@ ssize_t I2cAdapter::ReadImpl(const int64_t& iaddr, uint8_t* val, const uint16_t&
 
   if (info_.method_ == I2c::I2cMethod::kPlain) {
     if (I2cPlainCheckFail()) {
-      // TODO: Log: use plain to communicate with 10 bits address, waiting for implementation
+      // TODO: LogToAll: use plain to communicate with 10 bits address, waiting for implementation
       return 0;
     }
 
@@ -124,7 +124,7 @@ ssize_t I2cAdapter::ReadImpl(const int64_t& iaddr, uint8_t* val, const uint16_t&
 
   } else if (info_.method_ == I2c::I2cMethod::kSmbus) {
     if (I2cSmbusCheckFail()) {  // smbus check failed
-      // TODO: Log: use smbus to communicate with 10 bits address, waiting for implementation
+      // TODO: LogToAll: use smbus to communicate with 10 bits address, waiting for implementation
       return 0;
     }
 

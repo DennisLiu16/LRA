@@ -5,6 +5,7 @@ namespace lra::log_util {
 // implement of LogUnit
 // public
 LogUnit::LogUnit(const char* name) {
+  // TODO: search first -> 唯一性
   std::string n(name);
   name_ = n.append(1, '_').append(std::to_string(idx_for_next_++));
 }
@@ -31,17 +32,21 @@ std::unordered_set<std::string> LogUnit::getAllDefaultLoggers() {
   return default_loggers_;
 } 
 
-bool LogUnit::IsRegisteredLogUnit(const std::string &logunit_name) { return (!Drop(logunit_name)) ? (logunits_[logunit_name].use_count() > 0) : false; }
+// 如果 logunit shared_ptr 只剩下 logunits_ 在維護，則是無效 logunit，予以刪除並返回 false，另 shared_ptr counter > 0 時才返回 true
+bool LogUnit::IsRegisteredLogUnit(const std::string &logunit_name) { return (!Drop(logunit_name)) ? (logunits_[logunit_name].use_count() > 0) : false;}
 
 std::vector<std::string> LogUnit::getAllLogunitKeys() {
   std::vector<std::string> vec{};
-  for (auto map : logunits_) {
-    long count = map.second.use_count();
-    if (count > 1) {
+  for (auto &map : logunits_) {
+    if (IsRegisteredLogUnit(map.first)) { // valid
       vec.push_back(map.first);
-    } else if (count == 1) {
-      Drop(map.first);
-    }
+    } else {}
+    // long count = map.second.use_count();
+    // if (count > 1) {
+    //   vec.push_back(map.first);
+    // } else if (count == 1) {
+    //   Drop(map.first);
+    // }
   }
   return vec;
 }
@@ -50,7 +55,7 @@ std::vector<std::string> LogUnit::getAllLogunitKeys() {
 void LogUnit::Register(std::shared_ptr<LogUnit> ptr) { logunits_[ptr->name_] = ptr; }
 
 void LogUnit::ApplyDefaultLogger(std::shared_ptr<LogUnit> ptr) {
-  for (auto logger : default_loggers_) {
+  for (auto &logger : default_loggers_) {
     ptr->AddLogger(logger);
   }
 }

@@ -6,7 +6,7 @@
 #include <iostream>
 
 int main() {
-  auto my_logger = spdlog::basic_logger_mt("console", "/home/ubuntu/LRA/data/log/log_test.log", true);
+  auto my_logger = spdlog::basic_logger_mt("console", "/home/ubuntu/LRA/data/log/log_test.log", true); // delete log history if truncate open
   my_logger->set_level(spdlog::level::trace);
   my_logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [%s:%!:%#] %v");
 
@@ -23,8 +23,9 @@ int main() {
 
   // test const char* as logunit name 
   auto log_ptr = lra::log_util::LogUnit::CreateLogUnit("my_logunit");
+  auto log_ptr2 = lra::log_util::LogUnit::CreateLogUnit();
   vec = lra::log_util::LogUnit::getAllLogunitKeys();
   for(auto s: vec) {
-    spdlog::fmt_lib::print("{}", s);
+    spdlog::fmt_lib::print("{}\n", s);
   }
 }

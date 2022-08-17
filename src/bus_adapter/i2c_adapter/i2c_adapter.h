@@ -121,7 +121,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
     // call I2C plain method
     if (info_.method_ == I2c::I2cMethod::kPlain) {
       if (I2cPlainCheckFail()) {
-        // TODO: Log: use plain to communicate with 10 bits address, waiting for implementation
+        // TODO: LogToAll: use plain to communicate with 10 bits address, waiting for implementation
         return 0;
       }
 
@@ -132,7 +132,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
 
     } else if (info_.method_ == I2c::I2cMethod::kSmbus) {  // call SMBus method
       if (I2cSmbusCheckFail()) {                           // smbus check failed
-        // TODO: Log: use smbus to communicate with 10 bits address, waiting for implementation
+        // TODO: LogToAll: use smbus to communicate with 10 bits address, waiting for implementation
         return 0;
       }
 
@@ -187,7 +187,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
 
     if (info_.method_ == I2c::I2cMethod::kPlain) {
       if (I2cPlainCheckFail()) {
-        // TODO: Log: use plain to communicate with 10 bits address, waiting for implementation
+        // TODO: LogToAll: use plain to communicate with 10 bits address, waiting for implementation
         return 0;
       }
 
@@ -195,7 +195,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
 
     } else if (info_.method_ == I2c::I2cMethod::kSmbus) {
       if (I2cSmbusCheckFail()) {  // smbus check failed
-        // TODO: Log: use smbus to communicate with 10 bits address, waiting for implementation
+        // TODO: LogToAll: use smbus to communicate with 10 bits address, waiting for implementation
         return 0;
       }
 
@@ -233,7 +233,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
 
     if (info_.method_ == I2c::I2cMethod::kPlain) {
       if (I2cPlainCheckFail()) {
-        // TODO: Log: use plain to communicate with 10 bits address, waiting for implementation
+        // TODO: LogToAll: use plain to communicate with 10 bits address, waiting for implementation
         return 0;
       }
 
@@ -241,7 +241,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
 
     } else if (info_.method_ == I2c::I2cMethod::kSmbus) {
       if (I2cSmbusCheckFail()) {  // smbus check failed
-        // TODO: Log: use smbus to communicate with 10 bits address, waiting for implementation
+        // TODO: LogToAll: use smbus to communicate with 10 bits address, waiting for implementation
         return 0;
       }
 

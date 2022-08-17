@@ -9,8 +9,7 @@
 #include <spdlog/spdlog.h>
 
 #include <boost/core/demangle.hpp>
-// #include <source_location>  // require g++-11
-#include <experimental/source_location>
+#include <experimental/source_location>  // <--> <source_location>
 #include <tuple>
 #include <typeinfo>
 #include <unordered_map>
@@ -20,37 +19,33 @@
 
 namespace lra::log_util {
 
+/**
+ * @brief Construct source location information and level when calling
+ *
+ */
 struct LevelAndLocation {
   spdlog::level::level_enum level;
   std::experimental::source_location loc;
 
   LevelAndLocation(spdlog::level::level_enum lev,
                    const std::experimental::source_location &l = std::experimental::source_location::current())
-      : level(lev), loc(l){}
+      : level(lev), loc(l) {}
 };
 
 class LogUnit {
  public:
   inline std::string getName() { return name_; }
 
-  LogUnit(const char* name);
-
-  LogUnit(const auto &obj) {  // input should be *this, an instance or nullptr
-    // get name
-    std::string class_name;
-    if constexpr (std::is_same<decltype(obj), decltype(nullptr) const &>::value) {  // type determine is nullptr const&
-      class_name = "global";
-    } else {
-      class_name = "class_" + boost::core::demangle(typeid(obj).name());
-    }
-    // increment idx_for_next_
-    name_ = class_name.append(1, '_').append(std::to_string(idx_for_next_++));
-  }
-
   ~LogUnit();
 
-  static std::shared_ptr<LogUnit> CreateLogUnit(const auto &obj) {  // auto obj
-    auto ptr = std::make_shared<LogUnit>(obj);
+  template <typename... Arg>
+  static std::shared_ptr<LogUnit> CreateLogUnit(Arg &&...arg) {
+    // Access private ctor through class member struct CtorAccessor
+    struct CtorAccessor : public LogUnit {
+      CtorAccessor(Arg &&...arg) : LogUnit(std::forward<Arg>(arg)...){};
+    };
+
+    auto ptr = std::make_shared<CtorAccessor>(std::forward<Arg>(arg)...);
     Register(ptr);
     ApplyDefaultLogger(ptr);
     return ptr;
@@ -77,13 +72,13 @@ class LogUnit {
   // // https://cor3ntin.github.io/posts/variadic/
 
   // example:
-  // logunit->Log(std::make_tuple("msg id {}", 42), spdlog::level::error)
+  // logunit->LogToAll(std::make_tuple("msg id {}", 42), spdlog::level::error)
 
   // 7/12 find this can't compile owing to std::make_tuple require constexpr since g++-10
   // compile pass - g++-9.4.0 clang++10.0.0 -- aborted
 
   //   template <typename... Args>
-  //   void Log(std::tuple<Args...> tuple, const spdlog::level::level_enum &level,
+  //   void LogToAll(std::tuple<Args...> tuple, const spdlog::level::level_enum &level,
   //            const std::experimental::source_location &loc = std::experimental::source_location::current()) {
   //     if (SPDLOG_ACTIVE_LEVEL > level) {
   //       return;
@@ -117,7 +112,7 @@ class LogUnit {
    *  @param   info                Param stores level and where this function be called
    *  @param   fmt                 Param stores format string.
    *  @param   args                Rest of format string arguments
-               
+
       @details New version with struct LevelAndLocation to set source location to default argument.
                failed). Can't ignore fmt will do compile time check (requires constexpr).
                const char* will lead compiling error: args#0 is not constant expression.
@@ -128,7 +123,7 @@ class LogUnit {
       @htmlinclude https://stackoverflow.com/a/66402319/17408307
    */
   template <typename... Args>
-  void Log(LevelAndLocation info, spdlog::format_string_t<Args...> fmt, Args &&...args) {
+  void LogToAll(LevelAndLocation info, spdlog::format_string_t<Args...> fmt, Args &&...args) {
     if (SPDLOG_ACTIVE_LEVEL > info.level) {
       return;
     }
@@ -145,7 +140,9 @@ class LogUnit {
     }
   }
 
-  // TODO: We need a Log, LogAll and LogGlobal
+
+
+  // TODO: We need a LogToAll, LogAll and LogGlobal
 
  private:
   static uint32_t idx_for_next_;  // not static inline, https://zh-blog.logan.tw/2020/03/22/cxx-17-inline-variable/
@@ -158,6 +155,21 @@ class LogUnit {
 
   static void Register(std::shared_ptr<LogUnit> ptr);
   static void ApplyDefaultLogger(std::shared_ptr<LogUnit> ptr);
+
+  LogUnit(const char *name);
+
+  LogUnit(const auto &obj) {  // input should be *this, an instance or nullptr
+    // TODO: search first --> 唯一性
+    std::string class_name;
+    // if constexpr (std::is_same_v<decltype(obj), decltype(nullptr) const &>) {  // type determine is nullptr const&
+    if constexpr (std::same_as<std::remove_cvref_t<decltype(obj)>, nullptr_t>) {
+      class_name = "global";
+    } else {
+      class_name = boost::core::demangle(typeid(obj).name());
+    }
+    // increment idx_for_next_
+    name_ = class_name.append(1, '_').append(std::to_string(idx_for_next_++));
+  }
 };
 
 }  // namespace lra::log_util
