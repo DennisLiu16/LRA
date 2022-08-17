@@ -49,7 +49,7 @@ if(NOT WIN32)
   set(BoldWhite   "${Esc}[1;37m")
 endif()
 
-set(CMAKE_CXX_COMPILER "/usr/bin/g++-11")
+set(CMAKE_CXX_COMPILER "/usr/bin/g++-10")
 # set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 set(CMAKE_C_COMPILER "/usr/bin/gcc")
 
