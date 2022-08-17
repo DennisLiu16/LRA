@@ -3,9 +3,10 @@
 
 #include <device/device.h>
 #include <memory/registers/registers.h>
+#include <util/log/log.h>
 
-#include <deque>
 #include <array>
+#include <deque>
 
 namespace lra::device {
 
@@ -62,10 +63,13 @@ class Adxl355 {
        ZDATA1,   FIFO_DATA,    OFFSET_X_H,   OFFSET_X_L, OFFSET_Y_H, OFFSET_Y_L,   OFFSET_Z_H, OFFSET_Z_L,
        ACT_EN,   ACT_THRESH_H, ACT_THRESH_L, ACT_COUNT,  Filter,     FIFO_SAMPLES, INT_MAP,    Sync,
        Range,    POWER_CTL,    SELF_TEST,    Reset})};
+  
+  // functions
+  std::string getDeviceRegInfo();
 
  private:
-    std::deque<Acc3> data_pool_;
-    // std::shared_mutex
+  std::deque<Acc3> data_pool_;
+  // std::shared_mutex
 };
 }  // namespace lra::device
 
