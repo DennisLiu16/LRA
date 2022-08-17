@@ -141,6 +141,7 @@ class I2c : public Bus<I2c> {
     // return msg[1].len for iaddr read and msg[0].len for non-iaddr-read / write
     // write len == iaddr_bytes + size
     // read len  == size
+    // FIXME: no iaddr case?
     return data->msgs[data->nmsgs - 1].len;
 #endif
   }

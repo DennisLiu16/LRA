@@ -35,11 +35,11 @@ class BusAdapter {
  protected:
   // some useful functions
 
-  // limits to 8 bytes
-  auto MakeMaskWithLen(uint8_t byte_len) {
+  // max 8 bytes
+  auto MakeIntegralMask(uint8_t nbytes) {
     uint64_t mask = 0;
-    if (byte_len >= 8) return (~mask);
-    while (byte_len--) {
+    if (nbytes >= 8) return (~mask);
+    while (nbytes--) {
       mask = mask << 8 | 0x0ff;
     }
     return mask;
@@ -50,7 +50,7 @@ class BusAdapter {
   // CRITICAL: array len should always align with type U
   template <std::integral U>
   U Array2Integral_BE(U& val, uint8_t* buf) {
-    for (int i = 0; i < sizeof(U); i++) {
+    for (size_t i = 0; i < sizeof(U); i++) {
       val = (val << 8) | buf[i];
     }
     return val;

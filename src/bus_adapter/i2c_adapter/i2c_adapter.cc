@@ -34,26 +34,9 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const uint8_t* val, const u
       // TODO: Log: use plain to communicate with 10 bits address, waiting for implementation
       return 0;
     }
-    i2c_msg ioctl_msg;
-    i2c_rdwr_ioctl_data ioctl_data{.msgs{&ioctl_msg}, .nmsgs{1}};
-    uint16_t flags = info_.dev_info_->tenbit_ ? (info_.dev_info_->flags_ | I2C_M_TEN) : info_.dev_info_->flags_;
-    uint8_t tmp_buf[len + info_.dev_info_->iaddr_bytes_] = {0};
 
-    if (info_.dev_info_->iaddr_bytes_ <= 4) {
-      I2cInternalAddrConvert(iaddr, info_.dev_info_->iaddr_bytes_, tmp_buf);
-    } else {
-      assert(info_.dev_info_->iaddr_bytes_ <= 4 && "iaddr_bytes > 4, no implementation found");
-    }
+    ret_size = _CallBusI2cPlainWriteMulti(iaddr, val, len);
 
-    // XXX:copy val to tmp_buf
-    memcpy(tmp_buf + info_.dev_info_->iaddr_bytes_, val, len);
-
-    ioctl_msg.len = sizeof(tmp_buf);
-    ioctl_msg.addr = info_.dev_info_->addr_;  // slave address
-    ioctl_msg.buf = tmp_buf;
-    ioctl_msg.flags = flags;
-
-    ret_size = info_.bus_->WriteMulti<I2c::I2cMethod::kPlain>(&ioctl_data);
   } else if (info_.method_ == I2c::I2cMethod::kSmbus) {
     if (I2cSmbusCheckFail()) {  // smbus check failed
       // TODO: Log: use smbus to communicate with 10 bits address, waiting for implementation
@@ -63,7 +46,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const uint8_t* val, const u
     i2c_rdwr_smbus_data smbus_data{// XXX: const_cast
                                    .no_internal_reg_{(info_.dev_info_->iaddr_bytes_) ? false : true},
                                    .command_{(uint8_t)iaddr},
-                                   .len_{len},
+                                   .len_{(uint8_t)len},
                                    .slave_addr_{(uint8_t)info_.dev_info_->addr_},
                                    .value_{const_cast<uint8_t*>(val)}};
 
@@ -92,26 +75,9 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const std::vector<uint8_t>&
       // TODO: Log: use plain to communicate with 10 bits address, waiting for implementation
       return 0;
     }
-    i2c_msg ioctl_msg;
-    i2c_rdwr_ioctl_data ioctl_data{.msgs{&ioctl_msg}, .nmsgs{1}};
-    uint16_t flags = info_.dev_info_->tenbit_ ? (info_.dev_info_->flags_ | I2C_M_TEN) : info_.dev_info_->flags_;
-    uint8_t tmp_buf[val.size() + info_.dev_info_->iaddr_bytes_] = {0};  // XXX: use VLA
 
-    if (info_.dev_info_->iaddr_bytes_ <= 4) {
-      I2cInternalAddrConvert(iaddr, info_.dev_info_->iaddr_bytes_, tmp_buf);
-    } else {
-      assert(info_.dev_info_->iaddr_bytes_ <= 4 && "iaddr_bytes > 4, no implementation found");
-    }
+    ret_size = _CallBusI2cPlainWriteMulti(iaddr, val.data(), val.size());
 
-    // XXX:copy val to tmp_buf
-    memcpy(tmp_buf + info_.dev_info_->iaddr_bytes_, val.data(), val.size());
-
-    ioctl_msg.len = sizeof(tmp_buf);
-    ioctl_msg.addr = info_.dev_info_->addr_;  // slave address
-    ioctl_msg.buf = tmp_buf;
-    ioctl_msg.flags = flags;
-
-    ret_size = info_.bus_->WriteMulti<I2c::I2cMethod::kPlain>(&ioctl_data);
   } else if (info_.method_ == I2c::I2cMethod::kSmbus) {
     if (I2cSmbusCheckFail()) {  // smbus check failed
       // TODO: Log: use smbus to communicate with 10 bits address, waiting for implementation
@@ -120,7 +86,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const std::vector<uint8_t>&
 
     i2c_rdwr_smbus_data smbus_data{.no_internal_reg_{(info_.dev_info_->iaddr_bytes_) ? false : true},
                                    .command_{(uint8_t)iaddr},
-                                   .len_{val.size()},
+                                   .len_{(uint8_t)val.size()},
                                    .slave_addr_{(uint8_t)info_.dev_info_->addr_},
                                    // XXX: const_cast
                                    .value_{const_cast<uint8_t*>(val.data())}};
@@ -139,6 +105,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const std::vector<uint8_t>&
 // read functions
 
 // case 3
+// TODO: add while loop ?
 ssize_t I2cAdapter::ReadImpl(const int64_t& iaddr, uint8_t* val, const uint16_t& len) {
   if (!I2cInternalAddrCheck(info_.dev_info_->iaddr_bytes_, iaddr)) {
     // TODO:Logerr(iaddr len > dev_info_->iaddr_bytes_);
@@ -153,44 +120,7 @@ ssize_t I2cAdapter::ReadImpl(const int64_t& iaddr, uint8_t* val, const uint16_t&
       return 0;
     }
 
-    uint16_t flags = info_.dev_info_->tenbit_ ? (info_.dev_info_->flags_ | I2C_M_TEN) : info_.dev_info_->flags_;
-
-    struct i2c_msg ioctl_msg[2]{0};
-    struct i2c_rdwr_ioctl_data ioctl_data {
-      .msgs { ioctl_msg }
-    };
-
-    if (info_.dev_info_->iaddr_bytes_ > 0) {  // has internal address
-
-      uint8_t converted_iaddr[info_.dev_info_->iaddr_bytes_] = {0};
-
-      if (info_.dev_info_->iaddr_bytes_ <= 4) {
-        I2cInternalAddrConvert(iaddr, info_.dev_info_->iaddr_bytes_, converted_iaddr);
-      } else {
-        assert(info_.dev_info_->iaddr_bytes_ <= 4 && "iaddr_bytes > 4, no implementation found");
-      }
-
-      // write internal address
-      ioctl_msg[0].len = info_.dev_info_->iaddr_bytes_;
-      ioctl_msg[0].addr = info_.dev_info_->addr_;
-      ioctl_msg[0].buf = converted_iaddr;
-      ioctl_msg[0].flags = flags;
-
-      // read data
-      ioctl_msg[1].len = len;
-      ioctl_msg[1].addr = info_.dev_info_->addr_;
-      ioctl_msg[1].buf = val;
-      ioctl_msg[1].flags = flags | I2C_M_RD;
-      ioctl_data.nmsgs = 2;
-    } else {
-      ioctl_msg[0].len = len;
-      ioctl_msg[0].addr = info_.dev_info_->addr_;
-      ioctl_msg[0].buf = val;
-      ioctl_msg[0].flags = flags | I2C_M_RD;
-      ioctl_data.nmsgs = 1;
-    }
-
-    ret_size = info_.bus_->ReadMulti<I2c::I2cMethod::kPlain>(&ioctl_data);
+   ret_size = _CallBusI2cPlainReadMulti(iaddr, val, len);
 
   } else if (info_.method_ == I2c::I2cMethod::kSmbus) {
     if (I2cSmbusCheckFail()) {  // smbus check failed
@@ -200,7 +130,7 @@ ssize_t I2cAdapter::ReadImpl(const int64_t& iaddr, uint8_t* val, const uint16_t&
 
     i2c_rdwr_smbus_data smbus_data{.no_internal_reg_{(info_.dev_info_->iaddr_bytes_) ? false : true},
                                    .command_{(uint8_t)iaddr},
-                                   .len_{len},
+                                   .len_{(uint8_t)len},
                                    .slave_addr_{(uint8_t)info_.dev_info_->addr_},
                                    .value_{val}};
 
@@ -251,5 +181,69 @@ bool I2cAdapter::I2cPlainCheckFail() {
   // user choose Plain R/W
   // TODO: add len check (__u16)
   return !(info_.bus_->func_ & I2C_FUNC_I2C);
+}
+
+ssize_t I2cAdapter::_CallBusI2cPlainWriteMulti(const uint64_t& iaddr, const uint8_t* buf, const uint16_t& buf_len) {
+  i2c_msg ioctl_msg;
+  i2c_rdwr_ioctl_data ioctl_data{.msgs{&ioctl_msg}, .nmsgs{1}};
+  uint16_t flags = info_.dev_info_->tenbit_ ? (info_.dev_info_->flags_ | I2C_M_TEN) : info_.dev_info_->flags_;
+  uint8_t tmp_buf[buf_len + info_.dev_info_->iaddr_bytes_]{0};
+
+  // iaddr convert to tmp_buf
+  if (info_.dev_info_->iaddr_bytes_ <= sizeof(uint32_t)) {
+    I2cInternalAddrConvert(iaddr, info_.dev_info_->iaddr_bytes_, tmp_buf);
+  } else {
+    assert(false && "iaddr_bytes > 4, no implementation found");
+  }
+
+  // copy val to tmp_buf
+  memcpy(tmp_buf + info_.dev_info_->iaddr_bytes_, buf, buf_len);
+
+  ioctl_data.msgs->addr = info_.dev_info_->addr_;
+  ioctl_data.msgs->buf = tmp_buf;
+  ioctl_data.msgs->flags = flags;
+  ioctl_data.msgs->len = sizeof(tmp_buf);
+  return info_.bus_->WriteMulti<I2c::I2cMethod::kPlain>(&ioctl_data);
+}
+
+ssize_t I2cAdapter::_CallBusI2cPlainReadMulti(const uint64_t& iaddr, uint8_t* buf, const uint16_t& buf_len) {
+  uint16_t flags = info_.dev_info_->tenbit_ ? (info_.dev_info_->flags_ | I2C_M_TEN) : info_.dev_info_->flags_;
+
+  struct i2c_msg ioctl_msg[2]{0};
+  struct i2c_rdwr_ioctl_data ioctl_data {
+    .msgs { ioctl_msg }
+  };
+
+  if (info_.dev_info_->iaddr_bytes_ > 0) {  // has internal address
+
+    uint8_t converted_iaddr[info_.dev_info_->iaddr_bytes_]{0};
+
+    if (info_.dev_info_->iaddr_bytes_ <= 4) {
+      I2cInternalAddrConvert(iaddr, info_.dev_info_->iaddr_bytes_, converted_iaddr);
+    } else {
+      assert(false && "iaddr_bytes > 4, no implementation found");
+    }
+
+    // write internal address
+    ioctl_msg[0].len = info_.dev_info_->iaddr_bytes_;
+    ioctl_msg[0].addr = info_.dev_info_->addr_;
+    ioctl_msg[0].buf = converted_iaddr;
+    ioctl_msg[0].flags = flags;
+
+    ioctl_data.nmsgs = 2;
+    ioctl_data.msgs = ioctl_msg;
+
+  } else {  // no internal address
+    ioctl_data.nmsgs = 1;
+    ioctl_data.msgs = (ioctl_msg + 1);
+  }
+
+  // read data
+  ioctl_msg[1].len = buf_len;
+  ioctl_msg[1].addr = info_.dev_info_->addr_;
+  ioctl_msg[1].buf = buf;
+  ioctl_msg[1].flags = flags | I2C_M_RD;
+
+  return info_.bus_->ReadMulti<I2c::I2cMethod::kPlain>(&ioctl_data);
 }
 }  // namespace lra::bus_adapter::i2c
