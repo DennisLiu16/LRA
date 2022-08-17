@@ -25,6 +25,6 @@ int main() {
   auto log_ptr = lra::log_util::LogUnit::CreateLogUnit("my_logunit");
   vec = lra::log_util::LogUnit::getAllLogunitKeys();
   for(auto s: vec) {
-    spdlog::fmt_lib::print("{}\n", s);
+    spdlog::fmt_lib::print("{}", s);
   }
 }
