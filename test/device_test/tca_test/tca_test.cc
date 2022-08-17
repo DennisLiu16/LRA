@@ -29,7 +29,7 @@ int main() {
   I2cAdapter_S init_s;
   init_s.bus_ = std::make_shared<I2c>(i2c);
   init_s.delay_ = 0;
-  init_s.method_ = I2c::I2cMethod::kSmbus;
+  init_s.method_ = I2c::I2cMethod::kPlain;
   init_s.name_ = "tca";
 
   /*test Plain 400k*/
@@ -38,8 +38,8 @@ int main() {
   tca.Init(init_s);    // init internal member I2cAdapter with public member info_
 
   // tca.Write(tca.CONTROL.addr_, {0x2, 0x4});  // write std::initializer ok
-  uint32_t cycle = 10000;
-  for (int i = 0; i < cycle; i++) {
+  uint32_t cycle = 100;
+  for (uint32_t i = 0; i < cycle; i++) {
     auto start = std::chrono::high_resolution_clock::now();
     tca.Write(tca.CONTROL, 0x2);               // write std::initializer ok, test delay also (0 delay is ok)
     auto end = std::chrono::high_resolution_clock::now();
@@ -50,7 +50,7 @@ int main() {
 
   total = 0;
 
-  for (int i = 0; i < cycle; i++) {
+  for (uint32_t i = 0; i < cycle; i++) {
     auto start = std::chrono::high_resolution_clock::now();
     uint8_t tmp_w_buf[16]{0};
     tmp_w_buf[14] = 0x2;

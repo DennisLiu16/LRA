@@ -16,7 +16,7 @@ using lra::memory::registers::Register_8;
 
 using lra::bus::I2c;
 using lra::bus_adapter::i2c::I2cAdapter_S;
-using lra::device::I2cAdapter;
+using lra::bus_adapter::i2c::I2cAdapter;
 using lra::device::I2cDeviceInfo;
 
 int main() {
