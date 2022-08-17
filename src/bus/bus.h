@@ -3,7 +3,6 @@
 
 #include <assert.h>
 #include <fcntl.h>
-#include <memory/registers/registers.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <util/concepts/concepts.h>
@@ -12,8 +11,6 @@
 // TODO: include fnctl ...
 
 namespace lra::bus {
-using ::lra::memory::registers::is_register;
-using ::lra::memory::registers::is_valid_type_val;
 
 // classes
 

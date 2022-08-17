@@ -1,8 +1,7 @@
 #ifndef LRA_DEVICE_INFO_H_
 #define LRA_DEVICE_INFO_H_
-namespace lra::device {
 
-// store all Deviceinfo for specified bus
+namespace lra::device {
 
 // I2C defines
 // CRITICAL: if iaddr_bytes set with wrong number, bus adapter will crush

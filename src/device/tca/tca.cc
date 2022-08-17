@@ -6,6 +6,7 @@ Tca9548a::Tca9548a(const I2cDeviceInfo& info) { info_ = info; }
 bool Tca9548a::Init(I2cAdapter_S init_s) {
 
   // TODO: Log set to device ...
+  // lra::memory::registers::getDeviceRegInfo()
   init_s.dev_info_ = &info_;
 
   return adapter_.Init(init_s);

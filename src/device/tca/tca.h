@@ -3,6 +3,7 @@
 
 #include <bus_adapter/i2c_adapter/i2c_adapter.h>
 #include <device/device.h>
+#include <device/device_info.h>
 #include <memory/registers/registers.h>
 
 // SUM
@@ -10,6 +11,9 @@
 // 2. don't use reference in integral type args in first layer interface
 
 namespace lra::device {
+
+using ::lra::bus_adapter::i2c::I2cAdapter;
+using ::lra::bus_adapter::i2c::I2cAdapter_S;  // aka I2cAdapterInit_S
 
 class Tca9548a {
  public:
