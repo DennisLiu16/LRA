@@ -3,7 +3,7 @@
 
 #include <device/device.h>
 #include <memory/registers/registers.h>
-#include <util/log/log.h>
+#include <util/log/logunit.h>
 
 #include <array>
 #include <deque>

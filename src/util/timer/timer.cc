@@ -8,15 +8,13 @@
 // #include <functional>
 // #include <queue>
 
-#include <util/log/log.h>
-
 namespace lra::timer_util {
 
 namespace chrono = std::chrono;
 
 Timer::Timer() {
   nanosleep_delay_us_ = static_cast<uint32_t>(Value::kDefaultDelay);
-  // open a thread for run (background)
+  // open a background thread
   std::function<void()> daemon = std::bind(&Timer::Run, this, std::thread::hardware_concurrency() / 2);
   logunit = lra::log_util::LogUnit::CreateLogUnit(*this);
   logunit->LogToAll(spdlog::level::debug, "Timer daemon started");
