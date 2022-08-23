@@ -28,6 +28,9 @@ sudo perf script -i in-fb.data > in-fb.perf
 echo "data processing..."
 
 /opt/FlameGraph/stackcollapse-perf.pl in-fb.perf > in-fb.folded
+
+echo "convert to .svg..."
+
 /opt/FlameGraph/flamegraph.pl in-fb.folded > "$1_$time.svg"
 
 # remove
