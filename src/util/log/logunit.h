@@ -15,15 +15,14 @@
  *
  */
 
-#include <spdlog/pattern_formatter.h>
 #include <spdlog/spdlog.h>
 
 #include <boost/core/demangle.hpp>
 #include <experimental/source_location>  // <--> <source_location>
+#include <string_view>
 #include <typeinfo>
 #include <unordered_map>
 #include <unordered_set>
-#include <string_view>
 
 namespace lra::log_util {
 
@@ -31,9 +30,6 @@ using loglevel = spdlog::level::level_enum;
 
 class LogUnit {
  public:
-  // public dtor
-  ~LogUnit();
-
   // public static functions
   template <typename... Arg>
   static std::shared_ptr<LogUnit> CreateLogUnit(Arg &&...arg) {
@@ -60,35 +56,53 @@ class LogUnit {
     Level_Loc(const Level_Loc &LL) : level_(LL.level_), loc_(LL.loc_) {}
   };
 
+  // public static functions
+  static std::shared_ptr<LogUnit> getLogUnit(const std::string &str);
+  static std::vector<std::string> getAllLogUnitKeys();
+  static ssize_t RefreshKeys();
+
   // public functions
   void AddLogger(const std::string &logger_name);
+  void AddLogger(const std::shared_ptr<spdlog::logger> logger_ptr);
+  void AddLogger(const spdlog::logger &logger);
   void RemoveLogger(const std::string &logger_name);
-  bool Drop(const std::string& logunit_name = "");
+  void RemoveLogger(const std::shared_ptr<spdlog::logger> logger_ptr);
+  void RemoveLogger(const spdlog::logger &logger);
+
+  bool Drop(const std::string &logunit_name = "");
   std::string getName();
-  std::shared_ptr<LogUnit> getLogUnit(const std::string &str);
+
+  // critical
+  static void DropAllLogUnits();
 
   template <typename... Args>
   void LogToDefault(const Level_Loc &ll, spdlog::format_string_t<Args...> fmt, Args &&...args) {
     if (SPDLOG_ACTIVE_LEVEL > ll.level_) return;
 
-    std::string new_function_name = spdlog::fmt_lib::format("{} | <{}>", ll.loc_.function_name(), this->name_);
+    auto default_logger = spdlog::default_logger();
+    if ((default_logger != nullptr) && (default_logger->level() > ll.level_)) return;
+
+    const char *new_function_name = spdlog::fmt_lib::format("{} | {}", ll.loc_.function_name(), this->name_).c_str();
 
     // default logger's default value is color stdout: see spdlog/registry-inl.h
-    spdlog::default_logger()->log(spdlog::source_loc{ll.loc_.file_name(), (int)ll.loc_.line(), new_function_name.c_str()},
-                                ll.level_, fmt, std::forward<Args>(args)...);
+
+    default_logger->log(spdlog::source_loc{ll.loc_.file_name(), (int)ll.loc_.line(), new_function_name}, ll.level_, fmt,
+                        std::forward<Args>(args)...);
   }
 
   template <typename... Args>
   void LogToLoggers(const Level_Loc &ll, spdlog::format_string_t<Args...> fmt, Args &&...args) {
     if ((SPDLOG_ACTIVE_LEVEL > ll.level_) || (loggers_.size() == 0)) return;
 
-    std::string new_function_name = spdlog::fmt_lib::format("{} | <{}>", ll.loc_.function_name(), this->name_);
+    const char *new_function_name = spdlog::fmt_lib::format("{} | {}", ll.loc_.function_name(), this->name_).c_str();
 
     // log -> spdlog::log_it_ has constant qualifier (), forward should be ok
     for (const auto &logger_name : loggers_) {
       if (auto logger = spdlog::get(logger_name); logger != nullptr) {
-        logger->log(spdlog::source_loc{ll.loc_.file_name(), (int)ll.loc_.line(), new_function_name.c_str()}, ll.level_,
-                    fmt, std::forward<Args>(args)...);
+        if (logger->level() > ll.level_) continue;
+
+        logger->log(spdlog::source_loc{ll.loc_.file_name(), (int)ll.loc_.line(), new_function_name}, ll.level_, fmt,
+                    std::forward<Args>(args)...);
       } else {
         loggers_.erase(logger_name);
       }
@@ -103,7 +117,7 @@ class LogUnit {
     LogToLoggers(ll, fmt, std::forward<Args>(args)...);
   }
 
-  // if loggers_ is empty, log to spdlog::default_logger 
+  // if loggers_ is empty, log to spdlog::default_logger
   template <typename... Args>
   void LogToExist(const Level_Loc &ll, spdlog::format_string_t<Args...> fmt, Args &&...args) {
     // warning
@@ -111,9 +125,7 @@ class LogUnit {
                     : LogToDefault(ll, fmt, std::forward<Args>(args)...);
   }
 
-
   // public static variables
-  static std::unordered_map<std::string, std::shared_ptr<LogUnit>> logunits_;
 
   // public variables
 
@@ -123,7 +135,7 @@ class LogUnit {
   // 2. s_... -> usr input string
   // 3. {class_name} -> class object
   LogUnit();
-  LogUnit(const char* cstr);
+  LogUnit(const char *cstr);
   LogUnit(const std::string_view str_v);
   LogUnit(const std::string &name);
 
@@ -141,6 +153,9 @@ class LogUnit {
   // private member variables
   std::string name_{""};
   std::unordered_set<std::string> loggers_{};
+
+  // private static variables
+  static std::unordered_map<std::string, std::shared_ptr<LogUnit>> logunits_;
 };
 
 }  // namespace lra::log_util
