@@ -106,7 +106,7 @@ ssize_t I2cAdapter::WriteImpl(const uint64_t& iaddr, const std::vector<uint8_t>&
 
 // case 3
 // TODO: add while loop ?
-ssize_t I2cAdapter::ReadImpl(const int64_t& iaddr, uint8_t* val, const uint16_t& len) {
+ssize_t I2cAdapter::ReadImpl(const uint64_t& iaddr, uint8_t* val, const uint16_t& len) {
   if (!I2cInternalAddrCheck(info_.dev_info_->iaddr_bytes_, iaddr)) {
     // TODO:Logerr(iaddr len > dev_info_->iaddr_bytes_);
     return 0;

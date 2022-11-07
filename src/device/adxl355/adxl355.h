@@ -1,6 +1,8 @@
 #ifndef LRA_DEVICE_ADXL355_H_
 #define LRA_DEVICE_ADXL355_H_
 
+// TODO: 待 spi_adapter 和 spi_bus 寫好後重構
+
 #include <device/device.h>
 #include <memory/registers/registers.h>
 #include <util/log/logunit.h>
@@ -8,15 +10,38 @@
 #include <array>
 #include <deque>
 
+// tmp
+extern "C" {
+  #include <wiringPi.h>
+  #include <wiringPiSPI.h>
+}
+
+
 namespace lra::device {
+
+using ::lra::log_util::loglevel;
+
+// tmp struct for spi channel
+struct SpiInit_s {
+  int mode_{0};
+  int channel_{0};
+  int speed_{10000000};
+};
 
 class Adxl355 {
  public:
-  typedef struct Float3 {
-    float x{0.0};
-    float y{0.0};
-    float z{0.0};
-  } Acc3;
+  struct Acc3{
+    Float3 data;
+    float time;
+  };
+
+  // States
+  bool standby_{false};
+  int range_{0x10}; // 4 g
+
+  const float dRange_2g = 2.048*2;
+  const float dRange_4g = 4.096*2;
+  const float dRange_8g = 8.192*2;
 
   // Register
   constexpr static Register_8 DEVID_AD{0x00, 0xAD};
@@ -64,12 +89,55 @@ class Adxl355 {
        ACT_EN,   ACT_THRESH_H, ACT_THRESH_L, ACT_COUNT,  Filter,     FIFO_SAMPLES, INT_MAP,    Sync,
        Range,    POWER_CTL,    SELF_TEST,    Reset})};
   
-  // functions
-  std::string getDeviceRegInfo();
+  // Init and IO
+  Adxl355() = default;
 
+  void Init(SpiInit_s init, std::string name);
+
+  ssize_t Write(const uint8_t addr, const uint8_t *val, const uint16_t len);
+
+  std::vector<uint8_t> Read(const uint8_t addr, const uint16_t len);
+  
+  // Functions
+  std::string CheckDeviceReg();
+
+  void SetToDefault();
+
+  // void SetSamplingRate();
+
+  // void SetAccRange(int);
+
+  void SetStandBy(bool);
+
+  void SetAllReg(std::vector<uint8_t> v);
+
+  // Acc3 GetAccRange();
+
+  // Acc3 GetOffSet();
+
+  // working 
+  std::tuple<std::vector<uint8_t>, std::vector<uint8_t>> GetAllReg();
+
+  Acc3 GetAcc();
+
+  Acc3 ParseDigitalAcc(std::vector<uint8_t> v);
+
+  // int GetSamplingRate();
+
+  // bool GetStandBy();
+
+  Acc3 AccPopFront();
+
+  void AccPushBack(Acc3 acc_data);
  private:
-  std::deque<Acc3> data_pool_;
-  // std::shared_mutex
+  std::deque<Acc3> data_{};
+  std::shared_ptr<lra::log_util::LogUnit> logunit_{nullptr};
+  std::mutex dq_mutex_{};
+  std::string name_{};
+  SpiInit_s init_{};
+
+  // abort
+  std::mutex rw_mutex_{}; // FIXME: only one adxl355 can work on same spi bus
 };
 }  // namespace lra::device
 

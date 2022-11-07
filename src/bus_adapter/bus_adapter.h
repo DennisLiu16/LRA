@@ -35,6 +35,10 @@ class BusAdapter {
  protected:
   // some useful functions
 
+  uint8_t FindAddrLen(uint64_t addr) {
+    
+  }
+
   // max 8 bytes
   auto MakeIntegralMask(uint8_t nbytes) {
     uint64_t mask = 0;

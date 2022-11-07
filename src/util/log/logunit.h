@@ -75,6 +75,7 @@ class LogUnit {
   // critical
   static void DropAllLogUnits();
 
+  // TODO: How to improve performance from considering logger's level -> sink's level
   template <typename... Args>
   void LogToDefault(const Level_Loc &ll, spdlog::format_string_t<Args...> fmt, Args &&...args) {
     if (SPDLOG_ACTIVE_LEVEL > ll.level_) return;
@@ -82,11 +83,11 @@ class LogUnit {
     auto default_logger = spdlog::default_logger();
     if ((default_logger != nullptr) && (default_logger->level() > ll.level_)) return;
 
-    const char *new_function_name = spdlog::fmt_lib::format("{} | {}", ll.loc_.function_name(), this->name_).c_str();
+   std::string new_function_name = spdlog::fmt_lib::format("{} -> {}", ll.loc_.function_name(), this->name_);
 
     // default logger's default value is color stdout: see spdlog/registry-inl.h
 
-    default_logger->log(spdlog::source_loc{ll.loc_.file_name(), (int)ll.loc_.line(), new_function_name}, ll.level_, fmt,
+    default_logger->log(spdlog::source_loc{ll.loc_.file_name(), (int)ll.loc_.line(), new_function_name.c_str()}, ll.level_, fmt,
                         std::forward<Args>(args)...);
   }
 
@@ -94,14 +95,14 @@ class LogUnit {
   void LogToLoggers(const Level_Loc &ll, spdlog::format_string_t<Args...> fmt, Args &&...args) {
     if ((SPDLOG_ACTIVE_LEVEL > ll.level_) || (loggers_.size() == 0)) return;
 
-    const char *new_function_name = spdlog::fmt_lib::format("{} | {}", ll.loc_.function_name(), this->name_).c_str();
+    std::string new_function_name = spdlog::fmt_lib::format("{} -> {}", ll.loc_.function_name(), this->name_);
 
     // log -> spdlog::log_it_ has constant qualifier (), forward should be ok
     for (const auto &logger_name : loggers_) {
       if (auto logger = spdlog::get(logger_name); logger != nullptr) {
         if (logger->level() > ll.level_) continue;
 
-        logger->log(spdlog::source_loc{ll.loc_.file_name(), (int)ll.loc_.line(), new_function_name}, ll.level_, fmt,
+        logger->log(spdlog::source_loc{ll.loc_.file_name(), (int)ll.loc_.line(), new_function_name.c_str()}, ll.level_, fmt,
                     std::forward<Args>(args)...);
       } else {
         loggers_.erase(logger_name);

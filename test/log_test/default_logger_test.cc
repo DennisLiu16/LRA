@@ -57,7 +57,6 @@ int main() {
   std::string_view str_view{ss};
   auto log_ptr3 = lra::log_util::LogUnit::CreateLogUnit(str_view);
 
-
   auto start = std::chrono::high_resolution_clock::now();
   // write to default
   int cycle = 100000;
@@ -67,7 +66,7 @@ int main() {
                           i);  // test cmake splog macro working or not --> set to warn (should not print)
   }
   auto end = std::chrono::high_resolution_clock::now();
-  fmt::print("cost time: {:.5f} (ms)\n", (end-start).count()/1e6);
+  fmt::print("cost time: {:.5f} (ms)\n", (end - start).count() / 1e6);
 
   test();
 
@@ -78,18 +77,16 @@ int main() {
     fmt::print("{}\n", i);
   }
 
-  
   // apply logger
   log_ptr->AddLogger(simple_logger);
   start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < cycle; ++i) {
-    log_ptr->LogToLoggers(loglevel::critical, "{}, {}, {}, {}",i, i, i, i);
-    log_ptr->LogToLoggers(loglevel::debug, "{}, {}, {}, {}",i, i, i, i);
+    log_ptr->LogToLoggers(loglevel::critical, "{}, {}, {}, {}", i, i, i, i);
+    // log_ptr->LogToLoggers(loglevel::debug, "{}, {}, {}, {}", i, i, i, i);
   }
   end = std::chrono::high_resolution_clock::now();
 
-  fmt::print("cost time: {:.5f} (ms)\n", (end-start).count()/1e6);
-  
+  fmt::print("cost time: {:.5f} (ms)\n", (end - start).count() / 1e6);
 
   // you need to drop logger and logunit
   lra::log_util::LogUnit::DropAllLogUnits();

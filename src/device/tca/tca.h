@@ -51,6 +51,7 @@ class Tca9548a {
 
     // perfect forward to adapter write interface
     // XXX:should always convert to correct type if you want to use bitset (it's related to tmp_buf size -> may crush)
+    
     // It's ok to pass oversize val now (check in i2c_adapter layer), that is we don't need to write something like
     // ret = adapter_.Write(reg, (tpyename T::val_t)val);
 

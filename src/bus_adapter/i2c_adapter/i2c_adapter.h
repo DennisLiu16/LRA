@@ -222,7 +222,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
 
   // case 2 read one byte
   // extend user variable type (not only uint8_t&)
-  ssize_t ReadImpl(const int64_t& iaddr, std::integral auto& val_r) {
+  ssize_t ReadImpl(const uint64_t& iaddr, std::integral auto& val_r) {
     if (!I2cInternalAddrCheck(info_.dev_info_->iaddr_bytes_, iaddr)) {
       // TODO:Logerr(iaddr len > dev_info_->iaddr_bytes_);
       return 0;
@@ -266,7 +266,7 @@ class I2cAdapter : public BusAdapter<I2cAdapter> {
   }
 
   // case 3. (including vector.data())
-  ssize_t ReadImpl(const int64_t& iaddr, uint8_t* val, const uint16_t& len);
+  ssize_t ReadImpl(const uint64_t& iaddr, uint8_t* val, const uint16_t& len);
 
   static inline size_t getI2cWriteSize(const uint32_t& iaddr, const ssize_t& remain, const uint16_t& page_bytes) {
     uint16_t base_iaddr = iaddr % page_bytes;
