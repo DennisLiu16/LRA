@@ -24,7 +24,8 @@ Controller::Controller() {
   bool rtn = i2c_.Init("/dev/i2c-1");
   logunit_ = LogUnit::CreateLogUnit("MainController");
 
-  logunit_->LogToDefault(loglevel::info, "MainController try to create, start time: {:%Y-%m-%d %H:%M:%S}\n", start_time_);
+  logunit_->LogToDefault(loglevel::info, "MainController try to create, start time: {:%Y-%m-%d %H:%M:%S}\n",
+                         start_time_);
 
   if (rtn) {
     logunit_->LogToDefault(loglevel::info, "MainController I2C bus init successfully, speed: {}\n", i2c_.speed_);
@@ -85,6 +86,7 @@ void Controller::Init() {
 
   /* IT pin settings */
   const int interrupt_pin = 6;
+  wiringPiSetup();
   pinMode(interrupt_pin, INPUT);
   pullUpDnControl(interrupt_pin, PUD_DOWN);
   wiringPiISR(interrupt_pin, INT_EDGE_RISING, ItCallback);
@@ -214,7 +216,7 @@ void Controller::AccMeasureTask() {
       Controller::new_acc_data_ = false;
     } else {
       // XXX: may be a problem ?
-      std::this_thread::yield();
+      // std::this_thread::yield();
     }
   }
   return;
@@ -240,7 +242,7 @@ void Controller::CancelMeasureTask() {
 
 void Controller::StartMeasureTask() {
   if (adxl355_measure_t_.get_id() == std::thread::id()) {  // a null thread
-    std::thread adxl355_measure_t_(&Controller::AccMeasureTask, this);
+    adxl355_measure_t_ = std::thread{&Controller::AccMeasureTask, this}; // join in CancelMeasureTask()
     logunit_->LogToDefault(loglevel::info, "MainController StartMeasureTask successfully\n");
   } else {
     logunit_->LogToDefault(loglevel::warn, "MainController StartMeasureTask failed, thread existed\n");
