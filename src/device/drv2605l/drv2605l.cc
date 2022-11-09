@@ -36,7 +36,30 @@ int16_t Drv2605l::Read(const uint8_t addr) {
 }
 
 // functions
+std::vector<uint8_t> Drv2605l::GetAllReg() {
+  const int r_reg_len = LRA_PERIOD.addr_ + 1;
+  return Read(0x00, r_reg_len);
+}
+
+void Drv2605l::UpdateAllReg(std::vector<uint8_t> v) {
+  const int w_reg_len = LRA_PERIOD.addr_;  // 0x00 is RO
+
+  if (v.size() == w_reg_len) {
+    if (v[0] >> 7 == 1) {  // reset cmd
+      logunit_->LogToDefault(loglevel::err, "drv: {} UpdateAllReg may failed: reset bit in Mode is set\n", name_);
+    }
+    Write(MODE.addr_, v.data(), w_reg_len);
+  } else {
+    logunit_->LogToDefault(loglevel::err, "drv: {} UpdateAllReg failed: length: {} mismatch {}\n", name_, v.size(),
+                           w_reg_len);
+  }
+}
+
 void Drv2605l::SetToLraDefault() {
+  /* reset */
+  Write(MODE, 0x01 << 7);
+  usleep(1000000);
+
   /* necessary */
   Write(MODE, 0x01 << 6 | 0x05);  // RTP mode, standby
   Write(RTP_INPUT, 0x00);
@@ -51,7 +74,9 @@ void Drv2605l::SetToLraDefault() {
   Write(CONTROL4, 0x03 << 4);                                                  // autocalibration 1000~1200 ms
   Write(CONTROL5, 0x02 << 6 | 0x00 << 5 | 0x01 << 4);
 
-  /* custom */
+  /* TODO: custom */
+
+  logunit_->LogToDefault(loglevel::info, "drv: {} set to lra defaults\n", name_);
 }
 
 Drv2605lInfo Drv2605l::GetCalibrationInfo() {

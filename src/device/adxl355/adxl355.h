@@ -12,10 +12,9 @@
 
 // tmp
 extern "C" {
-  #include <wiringPi.h>
-  #include <wiringPiSPI.h>
+#include <wiringPi.h>
+#include <wiringPiSPI.h>
 }
-
 
 namespace lra::device {
 
@@ -30,18 +29,18 @@ struct SpiInit_s {
 
 class Adxl355 {
  public:
-  struct Acc3{
+  struct Acc3 {  // 16 bytes
     Float3 data;
     float time;
   };
 
   // States
   bool standby_{false};
-  int range_{0x10}; // 4 g
+  int range_{0x10};  // 4 g
 
-  const float dRange_2g = 2.048*2;
-  const float dRange_4g = 4.096*2;
-  const float dRange_8g = 8.192*2;
+  const float dRange_2g = 2.048 * 2;
+  const float dRange_4g = 4.096 * 2;
+  const float dRange_8g = 8.192 * 2;
 
   // Register
   constexpr static Register_8 DEVID_AD{0x00, 0xAD};
@@ -88,7 +87,7 @@ class Adxl355 {
        ZDATA1,   FIFO_DATA,    OFFSET_X_H,   OFFSET_X_L, OFFSET_Y_H, OFFSET_Y_L,   OFFSET_Z_H, OFFSET_Z_L,
        ACT_EN,   ACT_THRESH_H, ACT_THRESH_L, ACT_COUNT,  Filter,     FIFO_SAMPLES, INT_MAP,    Sync,
        Range,    POWER_CTL,    SELF_TEST,    Reset})};
-  
+
   // Init and IO
   Adxl355() = default;
 
@@ -97,7 +96,7 @@ class Adxl355 {
   ssize_t Write(const uint8_t addr, const uint8_t *val, const uint16_t len);
 
   std::vector<uint8_t> Read(const uint8_t addr, const uint16_t len);
-  
+
   // Functions
   std::string CheckDeviceReg();
 
@@ -109,18 +108,18 @@ class Adxl355 {
 
   void SetStandBy(bool);
 
-  void SetAllReg(std::vector<uint8_t> v);
+  void UpdateAllReg(std::vector<uint8_t> v);
 
   // Acc3 GetAccRange();
 
-  // Acc3 GetOffSet();
+  void SetOffSet(Acc3);
 
-  // working 
+  Acc3 GetOffSet();
+
+  // working
   std::tuple<std::vector<uint8_t>, std::vector<uint8_t>> GetAllReg();
 
   Acc3 GetAcc();
-
-  Acc3 ParseDigitalAcc(std::vector<uint8_t> v);
 
   // int GetSamplingRate();
 
@@ -128,7 +127,14 @@ class Adxl355 {
 
   Acc3 AccPopFront();
 
+  std::vector<Acc3> AccPopFrontN(size_t n);
+
+  std::vector<Acc3> AccPopAll();
+
   void AccPushBack(Acc3 acc_data);
+
+  inline ssize_t GetDataDequeSize() { return data_.size(); }
+
  private:
   std::deque<Acc3> data_{};
   std::shared_ptr<lra::log_util::LogUnit> logunit_{nullptr};
@@ -137,7 +143,11 @@ class Adxl355 {
   SpiInit_s init_{};
 
   // abort
-  std::mutex rw_mutex_{}; // FIXME: only one adxl355 can work on same spi bus
+  std::mutex rw_mutex_{};  // FIXME: only one adxl355 can work on same spi bus
+
+  // functions
+  Acc3 ParseDigitalAcc(std::vector<uint8_t> v);
+  float GetCacheRange();
 };
 }  // namespace lra::device
 

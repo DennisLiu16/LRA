@@ -49,12 +49,14 @@ void Adxl355::Init(SpiInit_s s_init, std::string name) {
 }
 
 ssize_t Adxl355::Write(const uint8_t addr, const uint8_t* val, const uint16_t len) {
-  std::lock_guard<std::mutex> lock(rw_mutex_);
   std::vector<uint8_t> v_tmp;
   v_tmp.push_back(addr << 1 | 0x00);
   v_tmp.insert(v_tmp.end(), val, val + len);
 
+  rw_mutex_.lock();
   int num = wiringPiSPIDataRW(init_.channel_, v_tmp.data(), len + 1);
+  rw_mutex_.unlock();
+
   if (num - 1 != len)
     logunit_->LogToDefault(loglevel::err, "adxl: {} write failed: len mismatch, rtn: {} != len: {}\n", name_, num - 1,
                            len);
@@ -63,11 +65,14 @@ ssize_t Adxl355::Write(const uint8_t addr, const uint8_t* val, const uint16_t le
 
 std::vector<uint8_t> Adxl355::Read(const uint8_t addr, const uint16_t len) {
   // ref: https://stackoverflow.com/questions/15004517/moving-elements-from-stdvector-to-another-one
-  std::lock_guard<std::mutex> lock(rw_mutex_);
   std::vector<uint8_t> v_tmp, v_rtn;
   v_tmp.resize(len + 1);
   v_tmp[0] = addr << 1 | 0x01;  // 0 for write, 1 for read
+
+  rw_mutex_.lock();
   int num = wiringPiSPIDataRW(init_.channel_, v_tmp.data(), len + 1);
+  rw_mutex_.unlock();
+
   if (num - 1 != len) {
     logunit_->LogToDefault(loglevel::err, "adxl: {} read failed: len mismatch, rtn: {} != len: {}\n", name_, num - 1,
                            len);
@@ -78,7 +83,7 @@ std::vector<uint8_t> Adxl355::Read(const uint8_t addr, const uint16_t len) {
 }
 
 void Adxl355::SetToDefault() {
-  /* reset device, standby mode */
+  /* reset device, standby mode; it's ok to write reset in measure mode */
   uint8_t val = 0x52;
   Write(Reset.addr_, &val, 1);
 
@@ -106,44 +111,105 @@ void Adxl355::SetStandBy(bool standby) {
 }
 
 std::tuple<std::vector<uint8_t>, std::vector<uint8_t>> Adxl355::GetAllReg() {
-  bool tmp = standby_;
-  SetStandBy(true);
+  // bool tmp = standby_; // only write need to protect
+  // SetStandBy(true);
 
   // avoid FIFO 0x11
-  const int ro_reg_num = 11;
-  const int rw_reg_num = 18;
+  constexpr int ro_reg_num = 0x10 + 1;
+  constexpr int rw_reg_num = 18;  // FIXME: RESET is WO register?
 
   auto v1 = Read(DEVID_AD.addr_, ro_reg_num);    // RO
   auto v2 = Read(OFFSET_X_H.addr_, rw_reg_num);  // RW, including reset
 
-  SetStandBy(tmp);
+  // SetStandBy(tmp);
 
   return std::make_tuple(v1, v2);
 }
 
-void Adxl355::SetAllReg(const std::vector<uint8_t> v) {
+/* FIXME: not thread safe, need a mutex ? */
+void Adxl355::UpdateAllReg(const std::vector<uint8_t> v) {
   bool tmp = standby_;
   SetStandBy(true);
 
-  const int range_idx = 14;
-  const int rw_reg_num = 18;
+  constexpr int range_idx = 14;
+  constexpr int rw_reg_num = 18;
 
   if (v.size() == rw_reg_num) {
     // update useful state
     int tmp_range = v[range_idx] & ((1 << 2) - 1);
-    if (tmp_range == 0) tmp_range = 0b10;      // user input protect
-    range_ = tmp_range;
-    Write(OFFSET_X_H.addr_, v.data(), 18);
+    if (tmp_range == 0x00) {
+      tmp_range = 0b10;  // user input protect -> check range not 0x00
+      logunit_->LogToDefault(loglevel::warn,
+                             "adxl: {} UpdateAllReg range setting wrong, can't be 0x00 @ RANGE register\n", name_);
+    }
+    range_ = tmp_range;  // FIXME: when update only range registers -> cache failed -> GetCacheRange failed too
+    Write(OFFSET_X_H.addr_, v.data(), v.size());
+  } else {
+    logunit_->LogToDefault(loglevel::err, "adxl: {} UpdateAllReg failed: length mismatch, v.size(): {} should be {}\n",
+                           name_, v.size(), rw_reg_num);
   }
 
   // FIXME: This can protect mode, but will modify user input (mode)
   SetStandBy(tmp);
 }
 
+/* FIXME: not thread safe, need a mutex ? */
+void Adxl355::SetOffSet(Adxl355::Acc3 acc) {
+  bool tmp = standby_;
+  SetStandBy(true);
+
+  constexpr int offset_reg_num = 6;
+  constexpr int offset_adc_num = 65536;  // 2^16
+  const float dAccRange = GetCacheRange();
+
+  int16_t intX = round(acc.data.x / dAccRange * offset_adc_num);
+  int16_t intY = round(acc.data.y / dAccRange * offset_adc_num);
+  int16_t intZ = round(acc.data.z / dAccRange * offset_adc_num);
+
+  /* check not overflow, offset_adc_num / 2 */
+  if (abs(intX) > (offset_adc_num >> 1) || abs(intY) > (offset_adc_num >> 1) || abs(intZ) > (offset_adc_num >> 1)) {
+    logunit_->LogToDefault(loglevel::err,
+                           "adxl: {} SetOffSet failed: data OverRange.\n x: {}, y: {}, z:{}\nChanges aborted\n", name_,
+                           acc.data.x, acc.data.y, acc.data.z);
+    return;
+  }
+
+  uint8_t new_offset[] = {
+      static_cast<uint8_t>(intX >> 8), static_cast<uint8_t>(intX),      static_cast<uint8_t>(intY >> 8),
+      static_cast<uint8_t>(intY),      static_cast<uint8_t>(intZ >> 8), static_cast<uint8_t>(intZ),
+  };
+
+  Write(OFFSET_X_H.addr_, new_offset, offset_reg_num);
+
+  SetStandBy(
+      tmp);  // FIXME: if other thread call some functions use SetStandby, this may break the standby if tmp is false.
+}
+
+Adxl355::Acc3 Adxl355::GetOffSet() {
+  constexpr int offset_len = 6;
+  constexpr int offset_adc_num = 65536;  // 2^16
+  const float dAccRange = GetCacheRange();
+  auto v = Read(OFFSET_X_H.addr_, offset_len);
+
+  uint16_t uintX = v[0] << 8 | v[1];
+  uint16_t uintY = v[2] << 8 | v[3];
+  uint16_t uintZ = v[4] << 8 | v[5];
+
+  int16_t intX = uintX, intY = uintY, intZ = uintZ;
+
+  Acc3 offset;
+
+  offset.data.x = (double)intX * (1.0 / offset_adc_num) * dAccRange;
+  offset.data.y = (double)intY * (1.0 / offset_adc_num) * dAccRange;
+  offset.data.z = (double)intZ * (1.0 / offset_adc_num) * dAccRange;
+
+  return offset;
+}
+
 /* Important: You should confirm standby_ is false in the measuring thread */
 /* Assign time by your self */
 Adxl355::Acc3 Adxl355::GetAcc() {
-  const int data_len = 9;
+  constexpr int data_len = 9;
   auto v = Read(XDATA3.addr_, data_len);
   return ParseDigitalAcc(v);
 }
@@ -161,23 +227,14 @@ Adxl355::Acc3 Adxl355::ParseDigitalAcc(std::vector<uint8_t> v) {
     uint32_t uintZ = (v[6] << 12) | (v[7] << 4) | (v[8] >> 4);
 
     // do two component according to 19th bit, if 1 -> convert, 0 -> same
-    const uint32_t mask_20 = (1 << 20) - 1;
+    constexpr uint32_t mask_20 = (1 << 20) - 1;
     int32_t intX = ((uintX & (1 << 19)) != 0) ? (uintX | ~mask_20) : uintX;
     int32_t intY = ((uintY & (1 << 19)) != 0) ? (uintY | ~mask_20) : uintY;
     int32_t intZ = ((uintZ & (1 << 19)) != 0) ? (uintZ | ~mask_20) : uintZ;
 
     // int to float
-    const uint32_t acc_adc_num = 524288;  // (2^20/2)
-    float dAccRange;
-
-    if (range_ == 0x01)
-      dAccRange = dRange_2g;
-    else if (range_ == 0x10)
-      dAccRange = dRange_4g;
-    else if (range_ == 0x11)
-      dAccRange = dRange_8g;
-    else
-      logunit_->LogToDefault(loglevel::err, "adxl: {} parse digital acc failed: range == {} \n", name_, range_);
+    constexpr uint32_t acc_adc_num = 1048576;  // (2^20)
+    const float dAccRange = GetCacheRange();
 
     tmp.data.x = ((double)intX) * (1.0 / acc_adc_num) * dAccRange;
     tmp.data.y = ((double)intY) * (1.0 / acc_adc_num) * dAccRange;
@@ -188,10 +245,50 @@ Adxl355::Acc3 Adxl355::ParseDigitalAcc(std::vector<uint8_t> v) {
 
 // inverse
 
+float Adxl355::GetCacheRange() {
+  float dAccRange;
+
+  if (range_ == 0x01)
+    dAccRange = dRange_2g;
+  else if (range_ == 0x10)
+    dAccRange = dRange_4g;
+  else if (range_ == 0x11)
+    dAccRange = dRange_8g;
+  else {
+    logunit_->LogToDefault(loglevel::err, "adxl: {} GetCacheRange: range is 0x00 .Not allows!\n", name_, range_);
+    dAccRange = dRange_4g;
+  }
+
+  return dAccRange;
+}
+
+/* should check deque's size by yourself, not safe so you need to avoid to use this function */
 Adxl355::Acc3 Adxl355::AccPopFront() {
   std::lock_guard<std::mutex> lock(dq_mutex_);
   auto tmp = data_.front();
   data_.pop_front();
+  return tmp;
+}
+
+std::vector<Adxl355::Acc3> Adxl355::AccPopAll() { return AccPopFrontN(data_.size()); }
+
+std::vector<Adxl355::Acc3> Adxl355::AccPopFrontN(size_t n) {
+  std::vector<Acc3> tmp;
+  if (n <= 0) return tmp;
+
+  std::lock_guard<std::mutex> lock(dq_mutex_);
+
+  if (data_.size() < n) {
+    n = data_.size();
+  }
+
+  tmp.reserve(n);
+
+  while (n--) {
+    tmp.push_back(data_.front());
+    data_.pop_front();
+  }
+
   return tmp;
 }
 

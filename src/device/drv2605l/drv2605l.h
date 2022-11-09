@@ -1,5 +1,5 @@
-#ifndef LRA_DEVICE_TCA9548A_H_
-#define LRA_DEVICE_TCA9548A_H_
+#ifndef LRA_DEVICE_DRV2605L_H_
+#define LRA_DEVICE_DRV2605L_H_
 
 #include <bus_adapter/i2c_adapter/i2c_adapter.h>
 #include <device/device.h>
@@ -116,6 +116,12 @@ class Drv2605l {  // DRV2605L
   constexpr static Register_8 LRA_PERIOD{0x22, 0x00};
 
   // functions
+  void SetAllReg(std::vector<uint8_t> v);
+
+  std::vector<uint8_t> GetAllReg();
+
+  void UpdateAllReg(std::vector<uint8_t> v);
+
   void SetToLraDefault();
 
   Drv2605lInfo GetCalibrationInfo();
