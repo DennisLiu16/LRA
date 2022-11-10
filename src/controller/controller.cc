@@ -24,8 +24,8 @@ Controller::Controller() {
   bool rtn = i2c_.Init("/dev/i2c-1");
   logunit_ = LogUnit::CreateLogUnit("MainController");
 
-  logunit_->LogToDefault(loglevel::info, "MainController try to create, start time: {:%Y-%m-%d %H:%M:%S}\n",
-                         start_time_);
+  logunit_->LogToDefault(loglevel::info, "MainController try to create, start time: {:%Y-%m-%d %H:%M:}{:%S}\n",
+                         start_time_, start_time_.time_since_epoch());
 
   if (rtn) {
     logunit_->LogToDefault(loglevel::info, "MainController I2C bus init successfully, speed: {}\n", i2c_.speed_);
@@ -48,7 +48,7 @@ void Controller::Init() {
   /* I2c device info settings */
   info_tca_.addr_ = 0x70;
   info_tca_.flags_ = 0;
-  info_tca_.iaddr_bytes_ = 0;
+  info_tca_.iaddr_bytes_ = 1;
   info_tca_.page_bytes_ = 16;
   info_tca_.tenbit_ = false;
 
@@ -80,8 +80,11 @@ void Controller::Init() {
   adxl_->Init(info_adxl_, "acc1");
 
   /* Can be deleted custom */
+  ChangeDrvCh('x');
   drv_x_->SetToLraDefault();
+  ChangeDrvCh('y');
   drv_y_->SetToLraDefault();
+  ChangeDrvCh('z');
   drv_z_->SetToLraDefault();
 
   /* IT pin settings */
@@ -90,6 +93,20 @@ void Controller::Init() {
   pinMode(interrupt_pin, INPUT);
   pullUpDnControl(interrupt_pin, PUD_DOWN);
   wiringPiISR(interrupt_pin, INT_EDGE_RISING, ItCallback);
+
+  /* Run calibration */
+  logunit_->LogToDefault(loglevel::info, "MainController go on init calibration\n");
+  auto [info_x, info_y, info_z, info_acc] = RunCalibration();
+
+  /* calibration ok? */
+  logunit_->LogToDefault(loglevel::info, "x: id: {}, result:{}, freq: {:.3f} Hz, Vbat: {:.3f} V.\n", info_x.device_id_,
+                         info_x.diag_result_, info_x.lra_freq_, info_x.vbat_);
+  logunit_->LogToDefault(loglevel::info, "y: id: {}, result:{}, freq: {:.3f} Hz, Vbat: {:.3f} V.\n", info_y.device_id_,
+                         info_y.diag_result_, info_y.lra_freq_, info_y.vbat_);
+  logunit_->LogToDefault(loglevel::info, "z: id: {}, result:{}, freq: {:.3f} Hz, Vbat: {:.3f} V.\n", info_z.device_id_,
+                         info_z.diag_result_, info_z.lra_freq_, info_z.vbat_);
+  logunit_->LogToDefault(loglevel::info, "acc new offset: x:{:.4f} y:{:.4f} z:{:.4f}.\n", info_acc.data.x,
+                         info_acc.data.y, info_acc.data.z);
 
   /* Start measure task if threading not exist */
   StartMeasureTask();
@@ -146,26 +163,45 @@ void Controller::ChangeDrvCh(char axis) {
   }
 }
 
-void Controller::Run() {
-  ChangeDrvCh('x');
-  drv_x_->Run(true);
-  ChangeDrvCh('y');
-  drv_y_->Run(true);
-  ChangeDrvCh('z');
-  drv_z_->Run(true);
+void Controller::RunDrv() {
+  // if (!drv_x_->GetRun()) {
+    ChangeDrvCh('x');
+    drv_x_->Run(true);
+  // }
+
+  // if (!drv_y_->GetRun()) {
+    ChangeDrvCh('y');
+    drv_y_->Run(true);
+  // }
+
+  // if (!drv_z_->GetRun()) {
+    ChangeDrvCh('z');
+    drv_z_->Run(true);
+  // }
 }
 
 /* Stop drv driving, should be called when disconnect of websocekt or pause being called by user */
-void Controller::PauseDriving() {
-  ChangeDrvCh('x');
-  drv_x_->Run(false);
-  ChangeDrvCh('y');
-  drv_y_->Run(false);
-  ChangeDrvCh('z');
-  drv_z_->Run(false);
+void Controller::PauseDrv() {
+  if (drv_x_->GetRun()) {
+    ChangeDrvCh('x');
+    drv_x_->Run(false);
+  }
+
+  if (drv_y_->GetRun()) {
+    ChangeDrvCh('y');
+    drv_y_->Run(false);
+  }
+
+  if (drv_z_->GetRun()) {
+    ChangeDrvCh('z');
+    drv_z_->Run(false);
+  }
 }
 
 std::tuple<Drv2605lInfo, Drv2605lInfo, Drv2605lInfo, Adxl355::Acc3> Controller::RunCalibration() {
+  bool no_measure_thread = (adxl355_measure_t_.get_id() == std::thread::id());
+  bool origin_standby = adxl_->standby_;
+
   /* three axis Drv2605 */
   auto cal_info_x = drv_x_->RunAutoCalibration();
   auto cal_info_y = drv_y_->RunAutoCalibration();
@@ -176,9 +212,29 @@ std::tuple<Drv2605lInfo, Drv2605lInfo, Drv2605lInfo, Adxl355::Acc3> Controller::
   std::vector<Adxl355::Acc3> v;
   v.reserve(data_num);
 
+  // make sure thread is on and on measurement mode
+  if (no_measure_thread) {
+    StartMeasureTask();
+    adxl_->SetStandBy(true);
+  }
+
+  auto cali_start = std::chrono::system_clock::now();
+
   for (int n = data_num - v.size(); n > 0; n = data_num - v.size()) {  // get data from dq
     auto v_tmp = adxl_->AccPopFrontN(n);
     v.insert(v.end(), v_tmp.begin(), v_tmp.end());
+    
+    // wait for 5 seconds
+    if((std::chrono::system_clock::now() - cali_start).count()/1e9 > 5) {
+      logunit_->LogToDefault(loglevel::err, "Init calibration for adxl355 timeout (5 secs)");
+      break;
+    }
+      
+  }
+
+  if (no_measure_thread) {
+    CancelMeasureTask();
+    adxl_->SetStandBy(origin_standby);  // FIXME: multiple threading issue
   }
 
   /* calculate average */
@@ -241,8 +297,8 @@ void Controller::CancelMeasureTask() {
 }
 
 void Controller::StartMeasureTask() {
-  if (adxl355_measure_t_.get_id() == std::thread::id()) {  // a null thread
-    adxl355_measure_t_ = std::thread{&Controller::AccMeasureTask, this}; // join in CancelMeasureTask()
+  if (adxl355_measure_t_.get_id() == std::thread::id()) {                 // a null thread
+    adxl355_measure_t_ = std::thread{&Controller::AccMeasureTask, this};  // join in CancelMeasureTask()
     logunit_->LogToDefault(loglevel::info, "MainController StartMeasureTask successfully\n");
   } else {
     logunit_->LogToDefault(loglevel::warn, "MainController StartMeasureTask failed, thread existed\n");
@@ -262,6 +318,17 @@ Controller::GetAllRegisters() {
   auto [adxl_v_ro, adxl_v_rw] = adxl_->GetAllReg();
 
   return std::make_tuple(drv_x_v, drv_y_v, drv_z_v, adxl_v_ro, adxl_v_rw);
+}
+
+std::tuple<Drv2605lRtInfo, Drv2605lRtInfo, Drv2605lRtInfo> Controller::GetRt() {
+  ChangeDrvCh('x');
+  auto info_x = drv_x_->GetRt();
+  ChangeDrvCh('y');
+  auto info_y = drv_y_->GetRt();
+  ChangeDrvCh('z');
+  auto info_z = drv_z_->GetRt();
+
+  return std::make_tuple(info_x, info_y, info_z);
 }
 
 void Controller::UpdateAllRegisters(

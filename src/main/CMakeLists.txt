@@ -2,8 +2,8 @@ message("CMAKE_SOURCE_DIR = ${CMAKE_CURRENT_SOURCE_DIR}")
 
 add_executable(lra_main main.h main.cc)
 
-target_include_directories(lra_main PRIVATE lra_log_util lra_timer_util lra_controller)
-target_link_libraries(lra_main PRIVATE lra_log_util lra_timer_util lra_controller)
+target_include_directories(lra_main PRIVATE lra_log_util lra_timer_util lra_controller lra_websocket)
+target_link_libraries(lra_main PRIVATE lra_log_util lra_timer_util lra_controller lra_websocket jsoncpp_lib)
 
 # set to bin dir
 set_target_properties(lra_main

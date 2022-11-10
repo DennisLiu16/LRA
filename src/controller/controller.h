@@ -21,6 +21,7 @@ using ::lra::bus_adapter::i2c::I2cAdapter_S;
 using ::lra::device::Adxl355;
 using ::lra::device::Drv2605l;
 using ::lra::device::Drv2605lInfo;
+using ::lra::device::Drv2605lRtInfo;
 using ::lra::device::I2cDeviceInfo;
 using ::lra::device::SpiInit_s;
 using ::lra::device::Tca9548a;
@@ -68,9 +69,9 @@ class Controller {  // FIXME: only one controller allows, for static function ca
 
   void Init();
 
-  void Run();
+  void RunDrv();
 
-  void PauseDriving();
+  void PauseDrv();
 
   void AccMeasureTask();
 
@@ -85,6 +86,8 @@ class Controller {  // FIXME: only one controller allows, for static function ca
   void CancelMeasureTask();
 
   void StartMeasureTask();
+
+  std::tuple<Drv2605lRtInfo,Drv2605lRtInfo ,Drv2605lRtInfo> GetRt();
 
   // 當有 require 來到時要被 called
   // void onModify();  // all, drv_x, drv_y, drv_z, adxl

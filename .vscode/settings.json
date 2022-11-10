@@ -78,7 +78,8 @@
         "ranges": "cpp",
         "any": "cpp",
         "i2c.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "coroutine": "cpp"
     },
     "svg.preview.background": "custom",
 

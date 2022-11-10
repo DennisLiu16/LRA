@@ -20,10 +20,15 @@ struct Drv2605lInfo {
   bool over_current_detect_{1};
   bool over_temp_detect_{1};
   float vbat_{0.0};
-  float lra_freq_{0.0}; // hz
+  float lra_freq_{0.0};  // hz
   float compensation_coeff_{0.0};
   float back_emf_result_{0.0};
   std::string device_id_{""};
+};
+
+struct Drv2605lRtInfo {
+  uint8_t rtp_{0};
+  float lra_freq_{0.0};
 };
 
 class Drv2605l {  // DRV2605L
@@ -132,13 +137,18 @@ class Drv2605l {  // DRV2605L
 
   float GetHz();
 
-  void Run(bool);   // fire go or stop
+  Drv2605lRtInfo GetRt();
 
-  void Ready(bool); // let device get into ready state or software standby
+  void Run(bool);  // fire go or stop
+
+  void Ready(bool);  // let device get into ready state or software standby
+
+  inline bool GetRun() { return run_; }
 
  private:
   I2cAdapter adapter_;
   std::string name_;
+  bool run_{false};
 };
 }  // namespace lra::device
 

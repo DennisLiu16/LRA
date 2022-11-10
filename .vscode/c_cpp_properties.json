@@ -4,7 +4,10 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/src/**",
-                "${workspaceFolder}/third_party/**"
+                "${workspaceFolder}/third_party/",
+                "${workspaceFolder}/third_party/asio/asio/include/",
+                "${workspaceFolder}/third_party/websocketpp/",
+                "${workspaceFolder}/third_party/jsoncpp/include/"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/g++-11",

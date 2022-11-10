@@ -139,6 +139,13 @@ Drv2605lInfo Drv2605l::RunAutoCalibration() {
   return GetCalibrationInfo();
 }
 
+Drv2605lRtInfo Drv2605l::GetRt() {
+  Drv2605lRtInfo tmp;
+  tmp.rtp_ = Read(RTP_INPUT);
+  tmp.lra_freq_ = GetHz();
+  return tmp;
+}
+
 float Drv2605l::GetHz() {
   auto val = Read(LRA_PERIOD);
   return 1 / (val * 98.46);
@@ -158,8 +165,11 @@ void Drv2605l::Ready(bool ready) {
 }
 
 void Drv2605l::Run(bool run) {
-  Ready(run);
-  Write(GO, run);
+  // if(run_ != run) {
+    Ready(run);
+    Write(GO, run);
+    run_ = run;
+  // }
 }
 
 void Drv2605l::UpdateRTP(uint8_t cmd) { Write(RTP_INPUT, cmd); }
