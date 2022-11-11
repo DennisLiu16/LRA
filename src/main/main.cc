@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
 
   ws_server.disconnect([&mainEventLoop, &ws_server, &main_p, &controller_p](ClientConnection conn) {
     mainEventLoop.post([conn, &ws_server, &main_p, &controller_p]() {
-      main_p->LogToDefault(loglevel::info, "ws_server new connection, total: {}", ws_server.numConnections());
+      main_p->LogToDefault(loglevel::info, "ws_server disconnect, total: {}", ws_server.numConnections());
       if (ws_server.numConnections() == 0) {
         // reset need_send_rt
         need_send_rt = false;
@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
   ws_server.message("drvDriveUpdate", [&mainEventLoop, &ws_server, &main_p, &controller_p](ClientConnection conn,
                                                                                            const Json::Value &args) {
     mainEventLoop.post([conn, args, &ws_server, &main_p, &controller_p]() {
-      bool to_run = args["data"]["msg"].asBool();
+      bool to_run = args["data"]["run"].asBool();
 
       // XXX: set to_run, should compared to all run states
       if (to_run != controller_p->drv_x_->GetRun()) {
@@ -181,6 +181,9 @@ int main(int argc, char *argv[]) {
 
       // log
       main_p->LogToDefault(loglevel::info, "ws receive `drvDriveUpdate`, to_run set to: {} ", to_run);
+
+      // on_run
+      on_run = to_run;
     });
   });
 
@@ -261,11 +264,11 @@ int main(int argc, char *argv[]) {
       // log
       auto start = std::chrono::system_clock::now();
       main_p->LogToDefault(loglevel::info, "ws receive calibrationRequire");
-
+      auto origin = controller_p->adxl_->standby_;
       on_calibration = true;
       controller_p->adxl_->SetStandBy(true);
       auto cal_result = controller_p->RunCalibration();
-      controller_p->adxl_->SetStandBy(false);
+      controller_p->adxl_->SetStandBy(origin);
       on_calibration = false;
 
       /* TODO: print local */
@@ -339,6 +342,8 @@ int main(int argc, char *argv[]) {
       // XXX
       need_send_rt = true;
 
+      /* send back */
+
       // log
       main_p->LogToDefault(loglevel::info, "ws receive `dataRTKeepRequire`, start to send real time data");
     });
@@ -360,10 +365,38 @@ int main(int argc, char *argv[]) {
       info["timestamp"] = spdlog::fmt_lib::format("{:%Y-%m-%d %H:%M:}{:%S}", now, now.time_since_epoch());
       info["data"] = data;
 
+      /* send back */
+
       // log
       main_p->LogToDefault(loglevel::info, "ws receive `dataRTStopRequire`, stop to send real time data");
     });
   });
+
+  // ws_server.message("drvDriveUpdate", [&mainEventLoop, &ws_server, &main_p, &controller_p](ClientConnection conn,
+  //                                                                                             const Json::Value &args) {
+  //   mainEventLoop.post([conn, args, &ws_server, &main_p, &controller_p]() {
+  //     // XXX
+
+  //     on_run = args["data"]["run"].asBool();
+
+  //     Json::Value info;
+  //     Json::Value data;
+
+  //     data["msg"] = "ok";
+
+  //     auto now = std::chrono::system_clock::now();
+  //     info["uuid"] = uuid;
+  //     info["timestamp"] = spdlog::fmt_lib::format("{:%Y-%m-%d %H:%M:}{:%S}", now, now.time_since_epoch());
+  //     info["data"] = data;
+
+  //     /* send back */
+
+  //     // log
+  //     main_p->LogToDefault(loglevel::info, "ws receive `drvDriveUpdate`, on_run: {}", on_run);
+  //   });
+  // });
+
+  
 
   // create control loop thread
   std::thread controller_t = std::thread([&controller_p, &leave_control_loop, &ws_rtp_cmd, &main_p, &ws_server]() {
@@ -379,15 +412,16 @@ int main(int argc, char *argv[]) {
         // main_p->LogToDefault(loglevel::info, "t: {0:%Y-%m-%d %H:%M:}{1:%S}", now, now.time_since_epoch());
 
         if (!on_modify) {          // 沒收到 webpage 的更改指令，安全嗎? mutex
-          // if (on_run) {
+          if (on_run) {
           controller_p->RunDrv();  // 確保有在運作 >> 請更改這個
+          controller_p->adxl_->SetStandBy(false);
 
           /* XXX: just for debug */
-          ws_rtp_cmd[0] = 0x0;
-          ws_rtp_cmd[1] = 0x0;
-          ws_rtp_cmd[2] = 0x0;
-          controller_p->UpdateAllRtp(VecToTuple<3, uint8_t>(ws_rtp_cmd));
-          // }
+          // ws_rtp_cmd[0] = 0x0;
+          // ws_rtp_cmd[1] = 0x0;
+          // ws_rtp_cmd[2] = 0x0;
+          // controller_p->UpdateAllRtp(VecToTuple<3, uint8_t>(ws_rtp_cmd));
+          }
 
           if (on_update_cmd) {
             controller_p->UpdateAllRtp(VecToTuple<3, uint8_t>(ws_rtp_cmd));
@@ -459,7 +493,7 @@ int main(int argc, char *argv[]) {
 
         // DEBUG: alive log
         i++;
-        if (i >= 100) {
+        if (i >= 500) {
           i = 0;
           /* get mode --DEBUG */
           controller_p->ChangeDrvCh('x');
@@ -478,30 +512,32 @@ int main(int argc, char *argv[]) {
   main_p->LogToDefault(loglevel::info, "ws server on");
 
   // Start the networking thread
-  std::thread serverThread([&ws_server]() { ws_server.run(8787); });
+  std::thread serverThread([&ws_server]() { ws_server.run(8765); });
 
   main_p->LogToDefault(loglevel::info, "mainEventLoop on\n");
   system_logger->flush();
 
   std::shared_ptr<asio::io_service::work> work = make_shared<asio::io_service::work>(mainEventLoop);
 
-  std::thread usr_it([&work]() {
-    while (true) {
-      // get usr input
-      char x;
-      std::cin >> x;
-      if (x == 'q') {
-        work.reset();
-        break;
-      }
-    }
-  });
+  // std::thread usr_it([&work]() {
+  //   while (true) {
+  //     // get usr input
+  //     char x;
+  //     std::cin >> x;
+  //     if (x == 'q') {
+  //       work.reset();
+  //       break;
+  //     }
+  //   }
+  // });
 
   // blocks here
   mainEventLoop.run();
+  
+  // usr_it.detach();
 
   /* should never goes to here */
-  usr_it.join();
+
 
   // if server down
   std::cout <<  "going to leave";

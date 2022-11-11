@@ -36,7 +36,7 @@ class Adxl355 {
 
   // States
   bool standby_{false};
-  int range_{0x10};  // 4 g
+  int range_{0b10};  // 4 g
 
   const float dRange_2g = 2.048 * 2;
   const float dRange_4g = 4.096 * 2;

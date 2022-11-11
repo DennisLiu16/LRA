@@ -88,11 +88,11 @@ void Adxl355::SetToDefault() {
   Write(Reset.addr_, &val, 1);
 
   /* set range to 4g */
-  val = 0x01 << 6 | 0x10;  // INT active high and 4g
+  val = 0x01 << 6 | 0b10;  // INT active high and 4g
   Write(Range.addr_, &val, 1);
 
-  /* INT_MAP to INT1*/
-  val = 0x01 << 3 | 0x01;
+  /* INT_MAP to INT2*/
+  val = 0x01 << 4;
   Write(INT_MAP.addr_, &val, 1);
 
   /* set sampling rate */
@@ -112,7 +112,7 @@ void Adxl355::SetStandBy(bool standby) {
 
 std::tuple<std::vector<uint8_t>, std::vector<uint8_t>> Adxl355::GetAllReg() {
   // bool tmp = standby_; // only write need to protect
-  // SetStandBy(true);
+  // SetStandBy(true); => safe to get
 
   // avoid FIFO 0x11
   constexpr int ro_reg_num = 0x10 + 1;
@@ -248,11 +248,11 @@ Adxl355::Acc3 Adxl355::ParseDigitalAcc(std::vector<uint8_t> v) {
 float Adxl355::GetCacheRange() {
   float dAccRange;
 
-  if (range_ == 0x01)
+  if (range_ == 0b01)
     dAccRange = dRange_2g;
-  else if (range_ == 0x10)
+  else if (range_ == 0b10)
     dAccRange = dRange_4g;
-  else if (range_ == 0x11)
+  else if (range_ == 0b11)
     dAccRange = dRange_8g;
   else {
     logunit_->LogToDefault(loglevel::err, "adxl: {} GetCacheRange: range is 0x00 .Not allows!\n", name_, range_);

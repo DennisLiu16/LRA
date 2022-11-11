@@ -221,6 +221,8 @@ std::tuple<Drv2605lInfo, Drv2605lInfo, Drv2605lInfo, Adxl355::Acc3> Controller::
     adxl_->SetStandBy(true);
   }
 
+  adxl_->SetStandBy(false);
+
   auto cali_start = std::chrono::system_clock::now();
 
   for (int n = data_num - v.size(); n > 0; n = data_num - v.size()) {  // get data from dq
@@ -236,11 +238,15 @@ std::tuple<Drv2605lInfo, Drv2605lInfo, Drv2605lInfo, Adxl355::Acc3> Controller::
 
   if (no_measure_thread) {
     CancelMeasureTask();
-    adxl_->SetStandBy(origin_standby);  // FIXME: multiple threading issue
   }
+
+  adxl_->SetStandBy(origin_standby);  // FIXME: multiple threading issue
 
   /* calculate average */
   Adxl355::Acc3 acc_avg;
+
+  acc_avg.time = (std::chrono::system_clock::now() - start_time_).count();
+
   for (auto& ele : v) {  // TODO: struct opertor
     acc_avg.data.x += ele.data.x;
     acc_avg.data.y += ele.data.y;
@@ -251,7 +257,14 @@ std::tuple<Drv2605lInfo, Drv2605lInfo, Drv2605lInfo, Adxl355::Acc3> Controller::
   acc_avg.data.y /= v.size();
   acc_avg.data.z /= v.size();
 
-  adxl_->SetOffSet(acc_avg);
+  auto origin_offset = adxl_->GetOffSet();
+
+  // combine 
+  acc_avg.data.x += origin_offset.data.x;
+  acc_avg.data.y += origin_offset.data.y;
+  acc_avg.data.z += origin_offset.data.z;
+
+  adxl_->SetOffSet(acc_avg); /*XXX: 包含了前面的校正，所以應該是先GetOffSet再 bias */
 
   logunit_->LogToDefault(loglevel::info, "MainController finished calibration\n");
   return std::make_tuple(cal_info_x, cal_info_y, cal_info_z, acc_avg);
