@@ -100,11 +100,11 @@ void Controller::Init() {
 
   /* calibration ok? */
   logunit_->LogToDefault(loglevel::info, "x: id: {}, result:{}, freq: {:.3f} Hz, Vbat: {:.3f} V.\n", info_x.device_id_,
-                         info_x.diag_result_, info_x.lra_freq_, info_x.vbat_);
+                         info_x.diag_result_ ? "Failed" : "Normal", info_x.lra_freq_, info_x.vbat_);
   logunit_->LogToDefault(loglevel::info, "y: id: {}, result:{}, freq: {:.3f} Hz, Vbat: {:.3f} V.\n", info_y.device_id_,
-                         info_y.diag_result_, info_y.lra_freq_, info_y.vbat_);
+                         info_y.diag_result_ ? "Failed" : "Normal", info_y.lra_freq_, info_y.vbat_);
   logunit_->LogToDefault(loglevel::info, "z: id: {}, result:{}, freq: {:.3f} Hz, Vbat: {:.3f} V.\n", info_z.device_id_,
-                         info_z.diag_result_, info_z.lra_freq_, info_z.vbat_);
+                         info_z.diag_result_ ? "Failed" : "Normal", info_z.lra_freq_, info_z.vbat_);
   logunit_->LogToDefault(loglevel::info, "acc new offset: x:{:.4f} y:{:.4f} z:{:.4f}.\n", info_acc.data.x,
                          info_acc.data.y, info_acc.data.z);
 
@@ -164,20 +164,20 @@ void Controller::ChangeDrvCh(char axis) {
 }
 
 void Controller::RunDrv() {
-  // if (!drv_x_->GetRun()) {
+  if (!drv_x_->GetRun()) {
     ChangeDrvCh('x');
     drv_x_->Run(true);
-  // }
+  }
 
-  // if (!drv_y_->GetRun()) {
+  if (!drv_y_->GetRun()) {
     ChangeDrvCh('y');
     drv_y_->Run(true);
-  // }
+  }
 
-  // if (!drv_z_->GetRun()) {
+  if (!drv_z_->GetRun()) {
     ChangeDrvCh('z');
     drv_z_->Run(true);
-  // }
+  }
 }
 
 /* Stop drv driving, should be called when disconnect of websocekt or pause being called by user */
@@ -203,8 +203,11 @@ std::tuple<Drv2605lInfo, Drv2605lInfo, Drv2605lInfo, Adxl355::Acc3> Controller::
   bool origin_standby = adxl_->standby_;
 
   /* three axis Drv2605 */
+  ChangeDrvCh('x');
   auto cal_info_x = drv_x_->RunAutoCalibration();
+  ChangeDrvCh('y');
   auto cal_info_y = drv_y_->RunAutoCalibration();
+  ChangeDrvCh('z');
   auto cal_info_z = drv_z_->RunAutoCalibration();
 
   /* acc bias correction */
@@ -223,13 +226,12 @@ std::tuple<Drv2605lInfo, Drv2605lInfo, Drv2605lInfo, Adxl355::Acc3> Controller::
   for (int n = data_num - v.size(); n > 0; n = data_num - v.size()) {  // get data from dq
     auto v_tmp = adxl_->AccPopFrontN(n);
     v.insert(v.end(), v_tmp.begin(), v_tmp.end());
-    
+
     // wait for 5 seconds
-    if((std::chrono::system_clock::now() - cali_start).count()/1e9 > 5) {
+    if ((std::chrono::system_clock::now() - cali_start).count() / 1e9 > 5) {
       logunit_->LogToDefault(loglevel::err, "Init calibration for adxl355 timeout (5 secs)");
       break;
     }
-      
   }
 
   if (no_measure_thread) {

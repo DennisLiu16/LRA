@@ -378,15 +378,15 @@ int main(int argc, char *argv[]) {
         // auto now = std::chrono::system_clock::now();
         // main_p->LogToDefault(loglevel::info, "t: {0:%Y-%m-%d %H:%M:}{1:%S}", now, now.time_since_epoch());
 
-        if (!on_modify) {  // 沒收到 webpage 的更改指令，安全嗎? mutex
+        if (!on_modify) {          // 沒收到 webpage 的更改指令，安全嗎? mutex
           // if (on_run) {
-            controller_p->RunDrv();  // 確保有在運作
+          controller_p->RunDrv();  // 確保有在運作 >> 請更改這個
 
-            /* set rtp by my self debug */
-            ws_rtp_cmd[0] = 0xff;
-            ws_rtp_cmd[1] = 0xff;
-            ws_rtp_cmd[2] = 0xff;
-            controller_p->UpdateAllRtp(VecToTuple<3, uint8_t>(ws_rtp_cmd));
+          /* XXX: just for debug */
+          ws_rtp_cmd[0] = 0x0;
+          ws_rtp_cmd[1] = 0x0;
+          ws_rtp_cmd[2] = 0x0;
+          controller_p->UpdateAllRtp(VecToTuple<3, uint8_t>(ws_rtp_cmd));
           // }
 
           if (on_update_cmd) {
@@ -464,7 +464,7 @@ int main(int argc, char *argv[]) {
           /* get mode --DEBUG */
           controller_p->ChangeDrvCh('x');
           auto now = std::chrono::system_clock::now();
-          main_p->LogToDefault(loglevel::debug, "controller thread alive: : {:%Y-%m-%d %H:%M:}{:%S}" , now,
+          main_p->LogToDefault(loglevel::debug, "controller thread alive: : {:%Y-%m-%d %H:%M:}{:%S}", now,
                                now.time_since_epoch());
         }
       } else {
@@ -477,21 +477,34 @@ int main(int argc, char *argv[]) {
 
   main_p->LogToDefault(loglevel::info, "ws server on");
 
-	//Start the networking thread
-	std::thread serverThread([&ws_server]() {
-		ws_server.run(8787);
-	});
+  // Start the networking thread
+  std::thread serverThread([&ws_server]() { ws_server.run(8787); });
 
-  main_p->LogToDefault(loglevel::info, "mainEventLoop on");
+  main_p->LogToDefault(loglevel::info, "mainEventLoop on\n");
   system_logger->flush();
 
+  std::shared_ptr<asio::io_service::work> work = make_shared<asio::io_service::work>(mainEventLoop);
+
+  std::thread usr_it([&work]() {
+    while (true) {
+      // get usr input
+      char x;
+      std::cin >> x;
+      if (x == 'q') {
+        work.reset();
+        break;
+      }
+    }
+  });
+
   // blocks here
-  asio::io_service::work work(mainEventLoop);
   mainEventLoop.run();
 
   /* should never goes to here */
+  usr_it.join();
 
   // if server down
+  std::cout <<  "going to leave";
   leave_control_loop = true;
 
   // drop controller

@@ -32,9 +32,9 @@ using ::lra::log_util::LogUnit;
 class Controller {  // FIXME: only one controller allows, for static function callback sake
  public:
   // const
-  const uint8_t drv_x_ch_{0x08};  // ch3
+  const uint8_t drv_x_ch_{0x80};  // ch3
   const uint8_t drv_y_ch_{0x10};  // ch4
-  const uint8_t drv_z_ch_{0x80};  // ch7
+  const uint8_t drv_z_ch_{0x08};  // ch7
   const ssize_t max_number_in_deque_{1024 * 1024 * 5 /
                                      sizeof(Adxl355::Acc3)};  // constrains to 5 MB => (1024 / 16) * 1024 * 5
 

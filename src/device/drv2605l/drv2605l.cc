@@ -98,7 +98,7 @@ Drv2605lInfo Drv2605l::GetCalibrationInfo() {
 
     info.over_current_detect_ = val & (0x1 << 1);
     info.over_temp_detect_ = val & 0x01;
-    info.diag_result_ = val & (0x01 << 3);
+    info.diag_result_ = val & (0x01 << 3); 
   }
 
   val = Read(A_CAL_COMP);
@@ -132,9 +132,10 @@ Drv2605lInfo Drv2605l::GetCalibrationInfo() {
 
 Drv2605lInfo Drv2605l::RunAutoCalibration() {
   auto mode = Read(MODE) & 0x07;  // get current mode, with mask (00000111)
-  Write(MODE, 0x01 << 6 | 0x07);  // calibration mode, standby
+  Write(MODE, 0x01 << 6 | 0x07);  // calibration mode, ready
   Run(true);                      // take 1 ~ 1.2 sec
   usleep(1200000);                // sleep 1.2 sec
+  Run(false);                     // fix internal state run_
   Write(MODE, 0x01 << 6 | mode);  // resume previous mode, standby
   return GetCalibrationInfo();
 }
@@ -148,7 +149,7 @@ Drv2605lRtInfo Drv2605l::GetRt() {
 
 float Drv2605l::GetHz() {
   auto val = Read(LRA_PERIOD);
-  return 1 / (val * 98.46);
+  return 1.0 / (val * 98.46 * 1e-6);
 }
 
 void Drv2605l::Ready(bool ready) {
@@ -157,19 +158,20 @@ void Drv2605l::Ready(bool ready) {
     logunit_->LogToDefault(loglevel::err, "drv: {}, execute Run() failed, due to read register MODE failed\n", name_);
     return;
   } else {
+    constexpr uint8_t sixth_bit_inverse_mask = 0b10111111;
     if (ready)
-      Write(MODE, (val & 0x00 << 6) | 0x00 << 6);
+      Write(MODE, (val & sixth_bit_inverse_mask) | 0x00 << 6);
     else
-      Write(MODE, (val & 0x00 << 6) | 0x01 << 6);
+      Write(MODE, (val & sixth_bit_inverse_mask) | 0x01 << 6);
   }
 }
 
 void Drv2605l::Run(bool run) {
-  // if(run_ != run) {
+  if(run_ != run) {
     Ready(run);
-    Write(GO, run);
+    Write(GO, (uint8_t)run);
     run_ = run;
-  // }
+  }
 }
 
 void Drv2605l::UpdateRTP(uint8_t cmd) { Write(RTP_INPUT, cmd); }
