@@ -117,7 +117,8 @@ class I2c : public Bus<I2c> {
   void I2cResetThisBus();
 
   template <typename T>
-  requires std::same_as<std::remove_const_t<T>, i2c_rdwr_ioctl_data> ssize_t PlainRW(T* data) {
+    requires std::same_as<std::remove_const_t<T>, i2c_rdwr_ioctl_data>
+  ssize_t PlainRW(T* data) {
 #ifdef I2C_UNIT_TEST
     spdlog::fmt_lib::print("In PlainRW\n");
     spdlog::fmt_lib::print("nmsg: {}\n", data->nmsgs);
@@ -154,7 +155,8 @@ class I2c : public Bus<I2c> {
   // 1. page->size > 32 && len > 32
   // 2. no internal address but more than one register (len != 1)
   template <bool Read, typename T>
-  requires std::same_as<std::remove_const_t<T>, i2c_rdwr_smbus_data> ssize_t SmbusRW(T* data) {
+    requires std::same_as<std::remove_const_t<T>, i2c_rdwr_smbus_data>
+  ssize_t SmbusRW(T* data) {
     if (last_slave_addr_ != data->slave_addr_) {  // change to target slave device
       if (ioctl(fd_, I2C_SLAVE, data->slave_addr_) < 0) return -1;
       last_slave_addr_ = data->slave_addr_;
@@ -167,8 +169,12 @@ class I2c : public Bus<I2c> {
           __s32 val = i2c_smbus_read_byte(fd_);
           if (val > -1) *(data->value_) = val;
           return (val > -1) ? 1 : val /*errno*/;
-        } else
-          assert(data->len_ == 1 && "More than one byte read for no-internal-address register by smbus i2c, waiting for impl");
+        } else {
+          assert(data->len_ == 1 &&
+                 "More than one byte read for no-internal-address register by smbus i2c, waiting for impl");
+          return 0;
+        }
+
       } else
         return i2c_smbus_read_i2c_block_data(fd_, data->command_, data->len_, data->value_);
 
@@ -178,8 +184,11 @@ class I2c : public Bus<I2c> {
         if (data->len_ == 1) {
           __s32 val = i2c_smbus_write_byte(fd_, *(data->value_));
           return (val > -1) ? 1 : val /*errno*/;
-        } else
-          assert(data->len_ == 1 && "More than one byte write for no-internal-address register by smbus i2c, waiting for impl");
+        } else {
+          assert(data->len_ == 1 &&
+                 "More than one byte write for no-internal-address register by smbus i2c, waiting for impl");
+          return 0;
+        }
 
       } else
         return i2c_smbus_write_i2c_block_data(fd_, data->command_, data->len_, data->value_);

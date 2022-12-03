@@ -5,10 +5,9 @@
 // #include <algorithm>
 // #include <chrono>
 #include <cmath>
+#include <unistd.h>
 // #include <functional>
 // #include <queue>
-
-#include <util/log/log.h>
 
 namespace lra::timer_util {
 
@@ -16,7 +15,7 @@ namespace chrono = std::chrono;
 
 Timer::Timer() {
   nanosleep_delay_us_ = static_cast<uint32_t>(Value::kDefaultDelay);
-  // open a thread for run (background)
+  // open a background thread
   std::function<void()> daemon = std::bind(&Timer::Run, this, std::thread::hardware_concurrency() / 2);
   logunit = lra::log_util::LogUnit::CreateLogUnit(*this);
   logunit->LogToAll(spdlog::level::debug, "Timer daemon started");
@@ -148,13 +147,16 @@ void Timer::Run(uint32_t thread_num) {
 
     if (event_queue_.empty()) {  // if event_queue_ is empty, sleep 1 sec
       sleep_time_ms = static_cast<double>(Value::kIdleSleepMs);
+      sleep((uint32_t)sleep_time_ms / 1000);
     } else {  // expired check(not empty), do task if poll ok, sort the events, calculate next closest interval
 
       HandleExpiredEvents(pool);
       sleep_time_ms = EvalNextInterval();  // update t_now_ here too
+
+      PreciseSleepms(sleep_time_ms, true);  // can be interrupted
     }
 
-    PreciseSleepms(sleep_time_ms, true);  // can be interrupted
+    
     t_now_ = chrono::high_resolution_clock::now();
   }
 

@@ -6,3 +6,12 @@
 [submodule "third_party/thread-pool"]
 	path = third_party/thread-pool
 	url = https://github.com/bshoshany/thread-pool.git
+[submodule "third_party/websocketpp"]
+	path = third_party/websocketpp
+	url = https://github.com/zaphoyd/websocketpp.git
+[submodule "third_party/jsoncpp"]
+	path = third_party/jsoncpp
+	url = https://github.com/open-source-parsers/jsoncpp.git
+[submodule "third_party/asio"]
+	path = third_party/asio
+	url = https://github.com/chriskohlhoff/asio.git

@@ -25,10 +25,17 @@ using ::lra::memory::registers::Register_T;
 using ::lra::errors_util::Errors;
 using ::std::to_underlying;
 
+// struct define
+struct Float3 {
+  float x{0.0};
+  float y{0.0};
+  float z{0.0};
+};
+
 // util functions
 template <typename V>
 bool IsNegative(const V& v) {
-  if constexpr (std::integral<V>) {
+  if constexpr (std::integral<V> && (!std::is_same_v<decltype(v), bool>)) {
     return (v < 0);
   }
 

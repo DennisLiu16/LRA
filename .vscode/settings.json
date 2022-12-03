@@ -78,7 +78,8 @@
         "ranges": "cpp",
         "any": "cpp",
         "i2c.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "coroutine": "cpp"
     },
     "svg.preview.background": "custom",
 
@@ -160,5 +161,16 @@
 
     ],
 
-    "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 2, ColumnLimit: 120}"
+    "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 2, ColumnLimit: 120}",
+    "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": true,
+    "C_Cpp.intelliSenseEngine": "default", // 解析器
+    
+    "[cpp]": {
+        "editor.quickSuggestions": {
+            "other": true,
+            "comments": false,
+            "strings": false
+          },
+          "editor.quickSuggestionsDelay": 5,
+    }
 }

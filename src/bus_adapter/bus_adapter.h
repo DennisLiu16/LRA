@@ -5,7 +5,7 @@
 #include <device/device_info.h>
 #include <memory/registers/registers.h>
 #include <unistd.h>
-#include <util/log/log.h>
+#include <util/log/logunit.h>
 
 namespace lra::bus_adapter {
 using ::lra::memory::registers::is_register;
@@ -34,6 +34,10 @@ class BusAdapter {
 
  protected:
   // some useful functions
+
+  uint8_t FindAddrLen(uint64_t addr) {
+    
+  }
 
   // max 8 bytes
   auto MakeIntegralMask(uint8_t nbytes) {

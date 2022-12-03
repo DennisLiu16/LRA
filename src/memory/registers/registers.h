@@ -42,6 +42,7 @@ struct Register {
 /**
  * @brief Register struct
  * @param dv_ default_value_ in short
+ * TODO: add readonly type
  */
 struct Register_8 : Register {
   bitset<8> dv_;

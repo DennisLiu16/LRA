@@ -1,9 +1,11 @@
 message("CMAKE_SOURCE_DIR = ${CMAKE_CURRENT_SOURCE_DIR}")
 
-file(GLOB_RECURSE SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
+# file(GLOB_RECURSE SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
+
+# log.cc, log.h -> aborted
 
 # add target
-add_library(lra_log_util SHARED ${SRC})
+add_library(lra_log_util SHARED logunit.cc)
 
 ## maybe you can modify this part
 # option(USE_SPDLOG
