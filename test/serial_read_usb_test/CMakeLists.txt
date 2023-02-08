@@ -1,0 +1,3 @@
+add_executable(lra_serial_cdc_list_test cdc_acm_list_devices.cc)
+target_include_directories(lra_serial_cdc_list_test PRIVATE lra_log_util lusb-1.0)
+target_link_libraries(lra_serial_cdc_list_test PRIVATE lra_log_util lusb-1.0)
