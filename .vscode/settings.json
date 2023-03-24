@@ -79,7 +79,10 @@
         "any": "cpp",
         "i2c.h": "c",
         "types.h": "c",
-        "coroutine": "cpp"
+        "coroutine": "cpp",
+        "strstream": "cpp",
+        "forward_list": "cpp",
+        "cfenv": "cpp"
     },
     "svg.preview.background": "custom",
 
