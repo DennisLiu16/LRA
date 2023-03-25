@@ -5,6 +5,31 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "usb_test_onWSL",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/dennis/develop/LRA/build/bin/lra_usb_util_test",
+            "MIMode": "gdb",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
             "name": "Normal test",
             "type": "cppdbg",
             "request": "launch",
@@ -52,7 +77,8 @@
                     "ignoreFailures": true
                 }
             ]
-        }
+        },
+        
 
     ]
 }
