@@ -1,22 +1,40 @@
 {
-    "configurations": [
-        {
-            "name": "Linux",
-            "includePath": [
-                "${workspaceFolder}/src/**",
-                "${workspaceFolder}/third_party/",
-                "${workspaceFolder}/third_party/asio/asio/include/",
-                "${workspaceFolder}/third_party/websocketpp/",
-                "${workspaceFolder}/third_party/jsoncpp/include/",
-                "${workspaceFolder}/third_party/spdlog/include/"
-            ],
-            "defines": [],
-            "compilerPath": "/usr/bin/g++-11",
-            "cStandard": "c17",
-            "cppStandard": "c++20",
-            "intelliSenseMode": "linux-gcc-arm64",
-            "configurationProvider": "ms-vscode.cmake-tools"
-        }
-    ],
-    "version": 4
+  "configurations": [
+    {
+      "name": "Linux",
+      "includePath": [
+        "${workspaceFolder}/src",
+        // "${workspaceFolder}/src/**",
+        "${workspaceFolder}/third_party/",
+        "${workspaceFolder}/third_party/asio/asio/include/",
+        "${workspaceFolder}/third_party/websocketpp/",
+        "${workspaceFolder}/third_party/jsoncpp/include/",
+        "${workspaceFolder}/third_party/spdlog/include/"
+      ],
+      "defines": [],
+      "compilerPath": "/usr/bin/g++-11",
+      "cStandard": "c17",
+      "cppStandard": "c++20",
+      "intelliSenseMode": "linux-gcc-arm64",
+      "configurationProvider": "ms-vscode.cmake-tools"
+    },
+    {
+      "name": "WSL-Ubuntu 22.04",
+      "includePath": [
+        "${workspaceFolder}/src",
+        "${workspaceFolder}/third_party/",
+        "${workspaceFolder}/third_party/asio/asio/include/",
+        "${workspaceFolder}/third_party/websocketpp/",
+        "${workspaceFolder}/third_party/jsoncpp/include/",
+        "${workspaceFolder}/third_party/spdlog/include/"
+      ],
+      "defines": [],
+      "compilerPath": "/usr/bin/g++-11",
+      "cStandard": "c17",
+      "cppStandard": "c++20",
+      "intelliSenseMode": "linux-gcc-x64",
+      "configurationProvider": "ms-vscode.cmake-tools"
+    }
+  ],
+  "version": 4
 }
