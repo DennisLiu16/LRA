@@ -1,179 +1,280 @@
 {
-    "files.associations": {
-        "ostream": "cpp",
-        "chrono": "cpp",
-        "cctype": "cpp",
-        "clocale": "cpp",
-        "cmath": "cpp",
-        "csignal": "cpp",
-        "cstdarg": "cpp",
-        "cstddef": "cpp",
-        "cstdio": "cpp",
-        "cstdlib": "cpp",
-        "cstring": "cpp",
-        "ctime": "cpp",
-        "cwchar": "cpp",
-        "cwctype": "cpp",
-        "array": "cpp",
-        "atomic": "cpp",
-        "bit": "cpp",
-        "*.tcc": "cpp",
-        "bitset": "cpp",
-        "codecvt": "cpp",
-        "complex": "cpp",
-        "condition_variable": "cpp",
-        "cstdint": "cpp",
-        "deque": "cpp",
-        "list": "cpp",
-        "map": "cpp",
-        "set": "cpp",
-        "unordered_map": "cpp",
-        "vector": "cpp",
-        "exception": "cpp",
-        "algorithm": "cpp",
-        "functional": "cpp",
-        "iterator": "cpp",
-        "memory": "cpp",
-        "memory_resource": "cpp",
-        "numeric": "cpp",
-        "optional": "cpp",
-        "random": "cpp",
-        "ratio": "cpp",
-        "string": "cpp",
-        "string_view": "cpp",
-        "system_error": "cpp",
-        "tuple": "cpp",
-        "type_traits": "cpp",
-        "utility": "cpp",
-        "fstream": "cpp",
-        "future": "cpp",
-        "initializer_list": "cpp",
-        "iomanip": "cpp",
-        "iosfwd": "cpp",
-        "iostream": "cpp",
-        "istream": "cpp",
-        "limits": "cpp",
-        "mutex": "cpp",
-        "new": "cpp",
-        "sstream": "cpp",
-        "stdexcept": "cpp",
-        "streambuf": "cpp",
-        "thread": "cpp",
-        "cinttypes": "cpp",
-        "typeindex": "cpp",
-        "typeinfo": "cpp",
-        "variant": "cpp",
-        "*.ipp": "cpp",
-        "charconv": "cpp",
-        "regex": "cpp",
-        "shared_mutex": "cpp",
-        "unordered_set": "cpp",
-        "compare": "cpp",
-        "concepts": "cpp",
-        "source_location": "cpp",
-        "numbers": "cpp",
-        "semaphore": "cpp",
-        "stop_token": "cpp",
-        "span": "cpp",
-        "ranges": "cpp",
-        "any": "cpp",
-        "i2c.h": "c",
-        "types.h": "c",
-        "coroutine": "cpp",
-        "strstream": "cpp",
-        "forward_list": "cpp",
-        "cfenv": "cpp"
+  "files.associations": {
+    "ostream": "cpp",
+    "chrono": "cpp",
+    "cctype": "cpp",
+    "clocale": "cpp",
+    "cmath": "cpp",
+    "csignal": "cpp",
+    "cstdarg": "cpp",
+    "cstddef": "cpp",
+    "cstdio": "cpp",
+    "cstdlib": "cpp",
+    "cstring": "cpp",
+    "ctime": "cpp",
+    "cwchar": "cpp",
+    "cwctype": "cpp",
+    "array": "cpp",
+    "atomic": "cpp",
+    "bit": "cpp",
+    "*.tcc": "cpp",
+    "bitset": "cpp",
+    "codecvt": "cpp",
+    "complex": "cpp",
+    "condition_variable": "cpp",
+    "cstdint": "cpp",
+    "deque": "cpp",
+    "list": "cpp",
+    "map": "cpp",
+    "set": "cpp",
+    "unordered_map": "cpp",
+    "vector": "cpp",
+    "exception": "cpp",
+    "algorithm": "cpp",
+    "functional": "cpp",
+    "iterator": "cpp",
+    "memory": "cpp",
+    "memory_resource": "cpp",
+    "numeric": "cpp",
+    "optional": "cpp",
+    "random": "cpp",
+    "ratio": "cpp",
+    "string": "cpp",
+    "string_view": "cpp",
+    "system_error": "cpp",
+    "tuple": "cpp",
+    "type_traits": "cpp",
+    "utility": "cpp",
+    "fstream": "cpp",
+    "future": "cpp",
+    "initializer_list": "cpp",
+    "iomanip": "cpp",
+    "iosfwd": "cpp",
+    "iostream": "cpp",
+    "istream": "cpp",
+    "limits": "cpp",
+    "mutex": "cpp",
+    "new": "cpp",
+    "sstream": "cpp",
+    "stdexcept": "cpp",
+    "streambuf": "cpp",
+    "thread": "cpp",
+    "cinttypes": "cpp",
+    "typeindex": "cpp",
+    "typeinfo": "cpp",
+    "variant": "cpp",
+    "*.ipp": "cpp",
+    "charconv": "cpp",
+    "regex": "cpp",
+    "shared_mutex": "cpp",
+    "unordered_set": "cpp",
+    "compare": "cpp",
+    "concepts": "cpp",
+    "source_location": "cpp",
+    "numbers": "cpp",
+    "semaphore": "cpp",
+    "stop_token": "cpp",
+    "span": "cpp",
+    "ranges": "cpp",
+    "any": "cpp",
+    "i2c.h": "c",
+    "types.h": "c",
+    "coroutine": "cpp",
+    "strstream": "cpp",
+    "forward_list": "cpp",
+    "cfenv": "cpp"
+  },
+  "svg.preview.background": "custom",
+
+  // log file color related setting
+  "editor.tokenColorCustomizations": {
+    "textMateRules": [
+      {
+        "scope": "log.error",
+        "settings": {
+          "foreground": "#FF3333",
+          "fontStyle": "bold"
+        }
+      },
+      {
+        "scope": "log.warning",
+        "settings": {
+          "foreground": "#f4ad42",
+          "fontStyle": "bold"
+        }
+      },
+      {
+        "scope": "log.info",
+        "settings": {
+          "foreground": "#338FFF",
+          "fontStyle": "bold"
+        }
+      },
+      {
+        "scope": "log.date",
+        "settings": {
+          "foreground": "#33FFCB",
+          "fontStyle": "bold"
+        }
+      }
+    ]
+  },
+
+  // custom
+  "logFileHighlighter.customPatterns": [
+    {
+      "pattern": "\\[critical\\]",
+      "foreground": "#F133FF",
+      "fontWeight": "bold"
     },
-    "svg.preview.background": "custom",
-
-
-    // log file color related setting
-    "editor.tokenColorCustomizations": {
-        "textMateRules": [
-            {
-                "scope": "log.error",
-                "settings": {
-                    "foreground": "#FF3333",
-                    "fontStyle": "bold"
-                }
-            },
-            {
-                "scope": "log.warning",
-                "settings": {
-                    "foreground": "#f4ad42",
-                    "fontStyle": "bold"
-                }
-            },
-            {
-                "scope": "log.info",
-                "settings": {
-                    "foreground": "#338FFF",
-                    "fontStyle": "bold"
-                }
-            },
-            {
-                "scope": "log.date",
-                "settings": {
-                    "foreground": "#33FFCB",
-                    "fontStyle": "bold"
-                }
-            }
-        ]
+    {
+      "pattern": "\\[error\\]",
+      "foreground": "#FF3333",
+      "fontWeight": "bold"
     },
-
-    // custom
-    "logFileHighlighter.customPatterns": [
-        {
-            "pattern": "\\[critical\\]",
-            "foreground": "#F133FF",
-            "fontWeight": "bold"
-
-        },
-        {
-            "pattern": "\\[error\\]",
-            "foreground": "#FF3333",
-            "fontWeight": "bold"
-
-        },
-        {
-            "pattern": "\\[warn\\]",
-            "foreground": "#f4ad42",
-            "fontWeight": "bold",
-        },
-        {
-            "pattern": "\\[info\\]",
-            "foreground": "#338FFF",
-            "fontWeight": "bold",
-        },
-        {
-            "pattern": "(\\[debug\\])",
-            "foreground": "#FAFF33",
-            "fontWeight": "bold",
-        },
-        {
-            "pattern": "\\[trace\\]",
-            "foreground": "#33FF47",
-            "fontWeight": "bold",
-        },
-        {
-            "pattern": "\\[[a-zA-Z]+.*<[a-zA-Z]+.*>:[0-9]+\\]",
-            "foreground": "#69d6f7",
-            //"foreground": "#58B2A4",
-            "fontWeight": "bold",
-        },
-
-    ],
-
-    "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 2, ColumnLimit: 120}",
-    "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": true,
-    "C_Cpp.intelliSenseEngine": "default", // 解析器
-    
-    "[cpp]": {
-        "editor.quickSuggestions": {
-            "other": true,
-            "comments": false,
-            "strings": false
-          },
-          "editor.quickSuggestionsDelay": 5,
+    {
+      "pattern": "\\[warn\\]",
+      "foreground": "#f4ad42",
+      "fontWeight": "bold"
+    },
+    {
+      "pattern": "\\[info\\]",
+      "foreground": "#338FFF",
+      "fontWeight": "bold"
+    },
+    {
+      "pattern": "(\\[debug\\])",
+      "foreground": "#FAFF33",
+      "fontWeight": "bold"
+    },
+    {
+      "pattern": "\\[trace\\]",
+      "foreground": "#33FF47",
+      "fontWeight": "bold"
+    },
+    {
+      "pattern": "\\[[a-zA-Z]+.*<[a-zA-Z]+.*>:[0-9]+\\]",
+      "foreground": "#69d6f7",
+      //"foreground": "#58B2A4",
+      "fontWeight": "bold"
     }
+  ],
+
+  "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 2, ColumnLimit: 80}",
+  "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": true,
+  "C_Cpp.intelliSenseEngine": "default", // 解析器
+
+  "[cpp]": {
+    "editor.quickSuggestions": {
+      "other": true,
+      "comments": false,
+      "strings": false
+    },
+    "editor.quickSuggestionsDelay": 5
+  },
+
+  "psi-header.config": {
+    "forceToTop": true,
+    "blankLinesAfter": 2,
+    "license": "Custom"
+  },
+  "psi-header.changes-tracking": {
+    "isActive": true,
+    "modAuthor": "Modified By: ",
+    "modDate": "Last Modified: ",
+    "modDateFormat": "date",
+    "include": [],
+    "exclude": ["markdown", "json"],
+    "includeGlob": [],
+    "autoHeader": "manualSave"
+  },
+  "psi-header.license-text": [" "],
+  "psi-header.variables": [
+    ["company", "None"],
+    ["author", "Dennis Liu"],
+    ["authoremail", "liusx880630@gmail.com"]
+  ],
+  "psi-header.lang-config": [
+    {
+      "language": "lua",
+      "begin": "--[[",
+      "prefix": "--",
+      "end": "--]]",
+      "blankLinesAfter": 0
+    },
+    {
+      "language": "python",
+      "begin": "###",
+      "prefix": "# ",
+      "end": "###",
+      "blankLinesAfter": 0,
+      "beforeHeader": ["#!/usr/bin/env python3", "# -*- coding:utf-8 -*-"]
+    },
+    {
+      "language": "shellscript",
+      "begin": "#---------------------------------------------------------------------------",
+      "prefix": "# ",
+      "end": "#---------------------------------------------------------------------------",
+      "blankLinesAfter": 0,
+      "beforeHeader": ["#!/bin/sh"]
+    },
+    {
+      "language": "javascript",
+      "begin": "/**",
+      "prefix": " * ",
+      "end": " */",
+      "blankLinesAfter": 2,
+      "forceToTop": false
+    },
+    {
+      "language": "typescript",
+      "mapTo": "javascript"
+    }
+  ],
+  "psi-header.templates": [
+    {
+      "language": "*",
+      "template": [
+        "File: <<filename>>",
+        "Created Date: <<filecreated('YYYY-MM-DD')>>",
+        "Author: <<author>>",
+        "Contact: <<<authoremail>>>",
+        "",
+        "Last Modified: <<dateformat('dddd MMMM Do YYYY h:mm:ss a')>>",
+        "",
+        "Copyright (c) <<year>> <<company>>",
+        "<<licensetext>>",
+        "-----",
+        "HISTORY:",
+        "Date      \t By\tComments",
+        "----------\t---\t----------------------------------------------------------"
+      ],
+      "changeLogCaption": "HISTORY:",
+      "changeLogHeaderLineCount": 2,
+      "changeLogEntryTemplate": [
+        "",
+        "<<dateformat(DD-MM-YYYY)>>\t<<initials>>\t"
+      ]
+    },
+    {
+      "language": "javascript",
+      "template": [
+        "File: <<filepath>>",
+        "Project: <<projectpath>>",
+        "Created Date: <<filecreated('YYYY-MM-DD  h:mm:ss')>>",
+        "Author: <<author>>",
+        "-----",
+        "Last Modified: ",
+        "Modified By: ",
+        "-----",
+        "Copyright (c) <<year>> <<company>>",
+        "------------------------------------",
+        "Javascript will save your soul!"
+      ]
+    },
+    {
+      "language": "typescript",
+      "mapTo": "javascript"
+    }
+  ]
 }
