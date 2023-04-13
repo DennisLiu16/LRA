@@ -1,5 +1,5 @@
-
-#pragma once
+#ifndef LRA_USB_DEFINES
+#define LRA_USB_DEFINES
 #include <cstdint>
 /*************/
 /* lra_usb.h */
@@ -189,3 +189,8 @@ typedef enum {
   LRA_DEVICE_ALL,
   LRA_DEVICE_INVALID
 } LRA_Device_Index_t;
+
+extern const char rcws_msg_init[];
+extern const char rcws_msg_eop[];
+
+#endif

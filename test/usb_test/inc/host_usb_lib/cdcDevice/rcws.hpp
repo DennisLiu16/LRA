@@ -1,10 +1,10 @@
 /*
- * File: rcws.h
+ * File: rcws.hpp
  * Created Date: 2023-03-31
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Tuesday April 11th 2023 12:08:40 am
+ * Last Modified: Wednesday April 12th 2023 12:29:02 pm
  *
  * Copyright (c) 2023 None
  *
@@ -41,59 +41,80 @@ typedef struct {
   std::string devnum;
   std::string serialnum;
   std::string manufacturer;
-} RCWSInfo;
+} RcwsInfo;
 
-class RCWS {
+using RcwsCmdType = std::variant<
+    std::monostate, Command<FuncInfo<void>>, Command<FuncInfo<void, int>>,
+    Command<FuncInfo<void, std::vector<RcwsInfo>>>,
+    Command<FuncInfo<void, LRA_Device_Index_t>>,
+    Command<FuncInfo<void, LRA_USB_Mode_t>>, Command<FuncInfo<bool>>,
+    Command<FuncInfo<int, int, int>>, Command<FuncInfo<std::vector<RcwsInfo>>>,
+    Command<FuncInfo<RcwsInfo, std::vector<RcwsInfo>, int>>>;
+
+class Rcws {
  public:
-  explicit RCWS() { _RegisterAllCommands(); }
+  explicit Rcws() { _RegisterAllCommands(); }
+
+  // TODO: rewrite open, chooseRcws
   bool Open() {
     if (rcws_info_.path.empty()) {
-      auto rcws_candidates = FindAllRcws();
-
-      if (rcws_candidates.empty()) {
-        Log("No RCWS found\n");
-        return false;
-      }
-
-      auto target_rcws = ChooseRcws(rcws_candidates);
-
-      if (target_rcws.path.empty()) {
-        Log("Invalid RCWS target: devnode path is empty\n");
-        return false;
-      }
-      rcws_info_ = target_rcws;
+      Log("Invalid open! Please choose rcws instance first\n");
+      return false;
     }
 
     serial_io_.Open(rcws_info_.path);
 
-    if (!serial_io_.IsOpen()) return false;
+    if (!serial_io_.IsOpen()) {
+      Log("Serial port path: {} open failed\n", rcws_info_.path);
+      return false;
+    }
 
     serial_io_.SetDTR(true);
+    Log("Serial port open success\n");
     return true;
   }
 
   bool Close() {
     // unset DTR
+    if (!serial_io_.IsOpen()) {
+      Log("Serial Port already closed\n");
+      return false;
+    }
     serial_io_.SetDTR(false);
     serial_io_.Close();
+    Log("Serial port closed\n");
     return !serial_io_.IsOpen();
   }
 
   /**
    * This is a blocking user input function
    */
-  RCWSInfo ChooseRcws(std::vector<RCWSInfo> info) {
-    if (info.empty()) {
+  RcwsInfo ChooseRcws(std::vector<RcwsInfo> info, int index) {
+    if (info.empty() || (index >= info.size())) {
       Log("ChooseRcws: empty info vector, skipping the user selection part\n");
-      return {};
+      rcws_info_ = {};
+    } else {
+      rcws_info_ = info[index];
+    }
+
+    return rcws_info_;
+  }
+
+  void PrintAllRcwsInfo(std::vector<RcwsInfo> infos) {
+    Log("\n");
+    Log("All RCWS detected:\n\n");
+    int index = 0;
+    for (auto& info : infos) {
+      Log("--{}\n", index++);
+      PrintRcwsInfo(info);
     }
   }
 
   /**
    * Ref: https://stackoverflow.com/a/49207881
    */
-  std::vector<RCWSInfo> FindAllRcws() {
-    std::vector<RCWSInfo> rcws_info;
+  std::vector<RcwsInfo> FindAllRcws() {
+    std::vector<RcwsInfo> rcws_info;
 
     try {
       struct udev* udev = udev_new();
@@ -151,7 +172,7 @@ class RCWS {
         const char* pmanufacturer =
             udev_device_get_sysattr_value(usbbus_device, "manufacturer");
 
-        RCWSInfo info = {.path{safe_string(pdevnode)},
+        RcwsInfo info = {.path{safe_string(pdevnode)},
                          // .desc{descriptor},
                          .desc{safe_string(pdescriptor)},
                          .pid{safe_string(ppid)},
@@ -177,26 +198,35 @@ class RCWS {
       Log("run time error: {}\n", e.what());
     }
 
+    /* print all rcws */
     return rcws_info;
   }
 
-  void DevInit() {}
+  void DevInit() { WriteRcwsMsg(USB_OUT_CMD_INIT); }
 
-  void DevReset(uint8_t dev_index) {}
+  void DevReset(LRA_Device_Index_t dev_index) {
+    WriteRcwsMsg(USB_OUT_CMD_RESET_DEVICE, (uint8_t)dev_index);
+  }
 
   void DevPwmCmd() {}
 
-  std::vector<RCWSCmdType> command_vec_;
+  void DevSwitchMode(LRA_USB_Mode_t mode) {}
+
+  std::vector<RcwsCmdType> command_vec_;
 
  private:
-  void WriteRcwsMsg(uint8_t msg_type, std::vector<uint8_t> data) {
-    auto msg = msg_generator_.Generate(msg_type, data);
+  template <typename... Args>
+  void WriteRcwsMsg(LRA_USB_OUT_Cmd_t msg_type, Args&&... args) {
+    auto msg = msg_generator_.Generate(msg_type, std::forward<Args>(args)...);
+
     if (serial_io_.IsOpen()) {
       serial_io_.DrainWriteBuffer();
       serial_io_.Write(msg);
+    } else {
+      Log("Serial port is not open yet\n");
     }
-    return;
   }
+
   std::vector<uint8_t> ReadRcwsMsg() {
     std::vector<uint8_t> body;
     std::vector<uint8_t> header;
@@ -218,20 +248,28 @@ class RCWS {
     return header;
   }
 
+  void PrintRcwsInfo(RcwsInfo& info) {
+    Log("Path: {}\n", info.path);
+    Log("Manufacturer: {}\n", info.manufacturer);
+    Log("Product String: {}\n", info.desc);
+    Log("PID: {}\n", info.pid);
+    Log("VID: {}\n", info.vid);
+    Log("Serial Number: {}\n", info.serialnum);
+    Log("Bus Number: {}\n", info.busnum);
+    Log("Device Number: {}\n", info.devnum);
+
+    Log("\n");
+  }
+
   template <typename... Args>
   void Log(fmt::format_string<Args...> format_str, Args&&... args) {
     // TODO: change your logger here
     fmt::print(format_str, std::forward<Args>(args)...);
   }
 
-  template <class C>
-  inline std::basic_string<C> safe_string(const C* input) {
-    if (!input) return std::basic_string<C>();
-    return std::basic_string<C>(input);
-  }
-
   /**
    * Ref: https://stackoverflow.com/a/73260280
+   * Aborted
    */
   std::string GetDevDescriptor(const char* pbusnum, const char* pdevnum) {
     libusb_context* ctx;
@@ -312,13 +350,80 @@ class RCWS {
     return std::string(reinterpret_cast<char*>(product_name));
   }
 
-  void _RegisterAllCommands() {}
+  void _RegisterAllCommands() {
+    /* DevReset */
+    auto fi_resetdev = make_func_info(&Rcws::DevReset, this, LRA_DEVICE_ALL);
+    auto cmd_resetdev = Command("Rcws::DevReset", "Reset device given by user",
+                                std::move(fi_resetdev));
+    registered_cmd_vec_.push_back(cmd_resetdev);
+
+    /* DevInit */
+    auto fi_initdev = make_func_info(&Rcws::DevInit, this);
+    auto cmd_initdev =
+        Command("Rcws::DevInit", "Init RCWS (DRV_STM)", std::move(fi_initdev));
+    registered_cmd_vec_.push_back(cmd_initdev);
+
+    /* DevSwitchMode */
+    auto fi_switchmode =
+        make_func_info(&Rcws::DevSwitchMode, this, LRA_USB_CRTL_MODE);
+    auto cmd_switchmode = Command("Rcws::DevSwitchMode", "Switch RCWS Mode",
+                                  std::move(fi_switchmode));
+    registered_cmd_vec_.push_back(cmd_switchmode);
+
+    /* --------------------------------------------------------------------- */
+
+    /* Open */
+    auto fi_open = make_func_info(&Rcws::Open, this);
+    auto cmd_open =
+        Command("Rcws::Open", "Open serial port to communicate to RCWS",
+                std::move(fi_open));
+    registered_cmd_vec_.push_back(cmd_open);
+
+    /* Close */
+    auto fi_close = make_func_info(&Rcws::Close, this);
+    auto cmd_close =
+        Command("Rcws::Close", "Close serial port", std::move(fi_close));
+    registered_cmd_vec_.push_back(cmd_close);
+
+    /* ChooseRcws */
+    auto fi_choosercws = make_func_info(&Rcws::ChooseRcws, this, {}, 0);
+    auto cmd_choosercws =
+        Command("Rcws::ChooseRcws",
+                "Select RCWS instance from given std::vector<RcwsInfo>",
+                std::move(fi_choosercws));
+    registered_cmd_vec_.push_back(cmd_choosercws);
+
+    /* FindAllRcws */
+    auto fi_findallrcws = make_func_info(&Rcws::FindAllRcws, this);
+    auto cmd_findallrcws = Command(
+        "Rcws::FindAllRcws", "Find all mounted Rcws in current OS [Linux]",
+        std::move(fi_findallrcws));
+    registered_cmd_vec_.push_back(cmd_findallrcws);
+
+    /* PrintAllRcwsInfo */
+    auto fi_printallrcwsinfo =
+        make_func_info(&Rcws::PrintAllRcwsInfo, this, {});
+    auto cmd_printallrcwsinfo =
+        Command("Rcws::PrintAllRcwsInfo", "Print all detected RCWS information",
+                std::move(fi_printallrcwsinfo));
+    registered_cmd_vec_.push_back(cmd_printallrcwsinfo);
+  }
 
   uint8_t mode_{LRA_USB_WAIT_FOR_INIT_MODE};
+  RcwsInfo rcws_info_{};
+  std::vector<RcwsCmdType> registered_cmd_vec_;
+
+  /* External class */
   RCWSMsgGenerator msg_generator_;
-  RCWSParser parser_;
+  RcwsParser parser_;
   // thread read_thread_;
   LibSerial::SerialPort serial_io_;
-  RCWSInfo rcws_info_{};
 };
+
+template <class C>
+static inline std::basic_string<C> safe_string(const C* input) {
+  if (!input) return std::basic_string<C>();
+  return std::basic_string<C>(input);
+}
+
 }  // namespace lra::usb_lib

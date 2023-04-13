@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Tuesday April 11th 2023 4:47:54 pm
+ * Last Modified: Wednesday April 12th 2023 11:46:15 am
  *
  * Copyright (c) 2023 None
  *
@@ -15,6 +15,8 @@
  * ----------------------------------------------------------
  */
 #pragma once
+#include <drv_stm_lib/lra_usb_defines.h>
+
 #include <variant>
 
 #include "command_impl.hpp"
@@ -41,12 +43,8 @@ template <typename... Ts>
 using variant_cat = typename variant_cat_s<Ts...>::type;
 
 /* defined rcws command vector */
-using StringCmdType =
-    std::variant<std::monostate, Command<FuncInfo<void, std::string>>>;
+// using StringCmdType =
+// std::variant<std::monostate, Command<FuncInfo<void, std::string>>>;
 
-using RCWSCmdType =
-    std::variant<std::monostate, Command<FuncInfo<int, int, int>>,
-                 Command<FuncInfo<void>>, Command<FuncInfo<void, int>>>;
-
-using UICmdType = variant_cat<StringCmdType, RCWSCmdType>;
+// using UiCmdType = variant_cat<StringCmdType, RcwsCmdType>;
 }  // namespace lra::usb_lib

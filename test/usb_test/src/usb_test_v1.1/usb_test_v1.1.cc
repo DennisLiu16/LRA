@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Tuesday April 11th 2023 3:50:47 pm
+ * Last Modified: Tuesday April 11th 2023 10:45:59 pm
  *
  * Copyright (c) 2023 None
  *
@@ -26,28 +26,11 @@ int main() {
   // add nonblocking user input
   NonBlockingInput non_blocking_input;
 
-  auto rcws_instance = lra::usb_lib::RCWS();
+  auto rcws_instance = lra::usb_lib::Rcws();
 
   auto rcws_list = rcws_instance.FindAllRcws();
 
-  auto print_rcws_info = [](auto& info) {
-    fmt::print("Path: {}\n", info.path);
-    fmt::print("Manufacturer: {}\n", info.manufacturer);
-    fmt::print("Product String: {}\n", info.desc);
-    fmt::print("PID: {}\n", info.pid);
-    fmt::print("VID: {}\n", info.vid);
-    fmt::print("Serial Number: {}\n", info.serialnum);
-    fmt::print("Bus Number: {}\n", info.busnum);
-    fmt::print("Device Number: {}\n", info.devnum);
-
-    fmt::print("\n");
-  };
-
-  fmt::print("List all RCWS\n\n");
-
-  for (auto& rcws : rcws_list) {
-    print_rcws_info(rcws);
-  }
+  rcws_instance.PrintAllRcwsInfo(rcws_list);
 
   // add RCWS here
 

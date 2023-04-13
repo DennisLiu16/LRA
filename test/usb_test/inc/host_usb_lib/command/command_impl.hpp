@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Tuesday April 11th 2023 4:47:50 pm
+ * Last Modified: Tuesday April 11th 2023 8:17:26 pm
  *
  * Copyright (c) 2023 None
  *
@@ -69,5 +69,7 @@ class Command {
   std::string description_;
   FuncInfo func_info_;
 };
+
+// TODO: need to impl FuncInfo& version?
 
 }  // namespace lra::usb_lib

@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Monday April 10th 2023 5:59:51 pm
+ * Last Modified: Tuesday April 11th 2023 7:57:12 pm
  *
  * Copyright (c) 2023 None
  *
@@ -53,4 +53,23 @@ struct FuncInfo {
     return func(std::get<Is>(args_tuple)...);
   }
 };
+
+// FuncInfo util, How it works: https://godbolt.org/z/WdWWo8zaK
+
+/**
+ * For member functions
+ */
+template <typename R, typename C, typename... Args>
+FuncInfo<R, Args...> make_func_info(R (C::*mem_func)(Args...), C* obj,
+                                    Args... default_args) {
+  return FuncInfo<R, Args...>(
+      [=](Args... args) { return (obj->*mem_func)(args...); }, default_args...);
+}
+
+// For free functions
+template <typename R, typename... Args>
+FuncInfo<R, Args...> make_func_info(R (*free_func)(Args...),
+                                    Args... default_args) {
+  return FuncInfo<R, Args...>(free_func, default_args...);
+}
 };  // namespace lra::usb_lib

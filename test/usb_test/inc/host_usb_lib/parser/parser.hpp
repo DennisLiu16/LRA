@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Tuesday April 11th 2023 5:02:08 pm
+ * Last Modified: Tuesday April 11th 2023 6:53:20 pm
  *
  * Copyright (c) 2023 None
  *
@@ -26,17 +26,17 @@
 #include <vector>
 
 namespace lra::usb_lib {
-class RCWSParser {
+class RcwsParser {
  public:
-  RCWSCmdType Parse(const std::string& data) const {}
+  RcwsCmdType Parse(const std::string& data) const {}
 
-  void RegisterCmd(std::vector<RCWSCmdType> commands) {
+  void RegisterCmd(std::vector<RcwsCmdType> commands) {
     available_cmd_.insert(available_cmd_.end(), commands.begin(),
                           commands.end());
   }
 
-  std::vector<RCWSCmdType> filterByMode(uint8_t mode) {
-    std::vector<RCWSCmdType> ret;
+  std::vector<RcwsCmdType> filterByMode(uint8_t mode) {
+    std::vector<RcwsCmdType> ret;
 
     for (const auto& cmd : available_cmd_) {
       std::visit(
@@ -76,11 +76,11 @@ class RCWSParser {
   }
 
  protected:
-  std::vector<RCWSCmdType> available_cmd_;
+  std::vector<RcwsCmdType> available_cmd_;
 };
 
 class UIParser {
  public:
-  UICmdType Parse(std::string input) {}
+  UiCmdType Parse(std::string input) {}
 };
 }  // namespace lra::usb_lib
