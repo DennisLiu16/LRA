@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Tuesday April 11th 2023 8:17:26 pm
+ * Last Modified: Friday April 14th 2023 2:32:02 pm
  *
  * Copyright (c) 2023 None
  *
@@ -71,5 +71,7 @@ class Command {
 };
 
 // TODO: need to impl FuncInfo& version?
+/* Clicommand example */
+// https://godbolt.org/z/K76rPG15E
 
 }  // namespace lra::usb_lib

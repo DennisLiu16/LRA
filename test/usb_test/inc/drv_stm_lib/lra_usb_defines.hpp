@@ -1,5 +1,4 @@
-#ifndef LRA_USB_DEFINES
-#define LRA_USB_DEFINES
+#pragma once
 #include <cstdint>
 /*************/
 /* lra_usb.h */
@@ -190,7 +189,5 @@ typedef enum {
   LRA_DEVICE_INVALID
 } LRA_Device_Index_t;
 
-extern const char rcws_msg_init[];
-extern const char rcws_msg_eop[];
-
-#endif
+std::string rcws_msg_init = "MFIL-RCWS-USB init\r\n";
+std::string rcws_msg_eop = "\r\n";

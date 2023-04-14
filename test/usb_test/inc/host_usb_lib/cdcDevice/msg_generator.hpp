@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Tuesday April 11th 2023 10:55:27 pm
+ * Last Modified: Thursday April 13th 2023 7:34:17 pm
  *
  * Copyright (c) 2023 None
  *
@@ -16,14 +16,14 @@
  */
 #pragma once
 
-#include <drv_stm_lib/lra_usb_defines.h>
-
 #include <cassert>
 #include <concepts>
 #include <cstdint>
+#include <drv_stm_lib/lra_usb_defines.hpp>
 
 namespace lra::usb_lib {
-class RCWSMsgGenerator {
+
+class RcwsMsgGenerator {
  public:
   std::vector<uint8_t> Generate(LRA_USB_OUT_Cmd_t type, uint8_t* data,
                                 uint16_t length) {

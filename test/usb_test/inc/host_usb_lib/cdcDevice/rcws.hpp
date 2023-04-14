@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Wednesday April 12th 2023 12:29:02 pm
+ * Last Modified: Friday April 14th 2023 7:59:46 pm
  *
  * Copyright (c) 2023 None
  *
@@ -22,34 +22,22 @@
 #include <spdlog/fmt/fmt.h>
 
 #include <cstdint>
-#include <host_usb_lib/command/command.hpp>
-#include <host_usb_lib/parser/parser.hpp>
+#include <host_usb_lib/parser/rcws_parser.hpp>
 
 #include "msg_generator.hpp"
+#include "rcws_info.hpp"
 
 namespace lra::usb_lib {
 
 /**
  *
  */
-typedef struct {
-  std::string path;
-  std::string desc;
-  std::string pid;
-  std::string vid;
-  std::string busnum;
-  std::string devnum;
-  std::string serialnum;
-  std::string manufacturer;
-} RcwsInfo;
 
-using RcwsCmdType = std::variant<
-    std::monostate, Command<FuncInfo<void>>, Command<FuncInfo<void, int>>,
-    Command<FuncInfo<void, std::vector<RcwsInfo>>>,
-    Command<FuncInfo<void, LRA_Device_Index_t>>,
-    Command<FuncInfo<void, LRA_USB_Mode_t>>, Command<FuncInfo<bool>>,
-    Command<FuncInfo<int, int, int>>, Command<FuncInfo<std::vector<RcwsInfo>>>,
-    Command<FuncInfo<RcwsInfo, std::vector<RcwsInfo>, int>>>;
+template <class C>
+static inline std::basic_string<C> safe_string(const C* input) {
+  if (!input) return std::basic_string<C>();
+  return std::basic_string<C>(input);
+}
 
 class Rcws {
  public:
@@ -57,6 +45,11 @@ class Rcws {
 
   // TODO: rewrite open, chooseRcws
   bool Open() {
+    if (serial_io_.IsOpen()) {
+      Log("Port already opened\n");
+      return false;
+    }
+
     if (rcws_info_.path.empty()) {
       Log("Invalid open! Please choose rcws instance first\n");
       return false;
@@ -105,7 +98,7 @@ class Rcws {
     Log("All RCWS detected:\n\n");
     int index = 0;
     for (auto& info : infos) {
-      Log("--{}\n", index++);
+      Log("index -- {}\n", index++);
       PrintRcwsInfo(info);
     }
   }
@@ -206,6 +199,9 @@ class Rcws {
 
   void DevReset(LRA_Device_Index_t dev_index) {
     WriteRcwsMsg(USB_OUT_CMD_RESET_DEVICE, (uint8_t)dev_index);
+    if (dev_index == LRA_DEVICE_STM32) {
+      this->Close();
+    }
   }
 
   void DevPwmCmd() {}
@@ -249,15 +245,16 @@ class Rcws {
   }
 
   void PrintRcwsInfo(RcwsInfo& info) {
-    Log("Path: {}\n", info.path);
-    Log("Manufacturer: {}\n", info.manufacturer);
-    Log("Product String: {}\n", info.desc);
-    Log("PID: {}\n", info.pid);
-    Log("VID: {}\n", info.vid);
-    Log("Serial Number: {}\n", info.serialnum);
-    Log("Bus Number: {}\n", info.busnum);
-    Log("Device Number: {}\n", info.devnum);
-
+    Log("{{\n");
+    Log("\tPath: {}\n", info.path);
+    Log("\tManufacturer: {}\n", info.manufacturer);
+    Log("\tProduct String: {}\n", info.desc);
+    Log("\tPID: {}\n", info.pid);
+    Log("\tVID: {}\n", info.vid);
+    Log("\tSerial Number: {}\n", info.serialnum);
+    Log("\tBus Number: {}\n", info.busnum);
+    Log("\tDevice Number: {}\n", info.devnum);
+    Log("}}\n");
     Log("\n");
   }
 
@@ -414,16 +411,10 @@ class Rcws {
   std::vector<RcwsCmdType> registered_cmd_vec_;
 
   /* External class */
-  RCWSMsgGenerator msg_generator_;
+  RcwsMsgGenerator msg_generator_;
   RcwsParser parser_;
   // thread read_thread_;
   LibSerial::SerialPort serial_io_;
 };
-
-template <class C>
-static inline std::basic_string<C> safe_string(const C* input) {
-  if (!input) return std::basic_string<C>();
-  return std::basic_string<C>(input);
-}
 
 }  // namespace lra::usb_lib
