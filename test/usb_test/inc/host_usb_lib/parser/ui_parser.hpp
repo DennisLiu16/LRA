@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Friday April 14th 2023 5:02:18 pm
+ * Last Modified: Friday April 14th 2023 8:47:26 pm
  *
  * Copyright (c) 2023 None
  *
@@ -53,7 +53,7 @@ class UIParser {
             }
             break;
           } catch (std::exception& e) {
-            Log("stoi failed\n");
+            Log("{}", e.what());
             break;
           }
         }

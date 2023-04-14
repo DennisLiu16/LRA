@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Friday April 14th 2023 7:59:46 pm
+ * Last Modified: Friday April 14th 2023 9:06:24 pm
  *
  * Copyright (c) 2023 None
  *
@@ -21,8 +21,10 @@
 #include <libusb-1.0/libusb.h>
 #include <spdlog/fmt/fmt.h>
 
+#include <chrono>
 #include <cstdint>
 #include <host_usb_lib/parser/rcws_parser.hpp>
+#include <thread>
 
 #include "msg_generator.hpp"
 #include "rcws_info.hpp"
@@ -45,6 +47,15 @@ class Rcws {
 
   // TODO: rewrite open, chooseRcws
   bool Open() {
+    // reset serial_port
+    if (reset_stm32_flag_) {
+      Log("Warning: Rcws just be reset. Please wait at least 10 seconds to "
+          "reconnect\n");
+      serial_io_ = LibSerial::SerialPort();
+      reset_stm32_flag_ = false;
+      std::this_thread::sleep_for(std::chrono::seconds(5));
+    }
+
     if (serial_io_.IsOpen()) {
       Log("Port already opened\n");
       return false;
@@ -69,7 +80,8 @@ class Rcws {
 
   bool Close() {
     // unset DTR
-    if (!serial_io_.IsOpen()) {
+    bool isopen = serial_io_.IsOpen();
+    if (!isopen) {
       Log("Serial Port already closed\n");
       return false;
     }
@@ -199,9 +211,7 @@ class Rcws {
 
   void DevReset(LRA_Device_Index_t dev_index) {
     WriteRcwsMsg(USB_OUT_CMD_RESET_DEVICE, (uint8_t)dev_index);
-    if (dev_index == LRA_DEVICE_STM32) {
-      this->Close();
-    }
+    if (dev_index == LRA_DEVICE_STM32) reset_stm32_flag_ = true;
   }
 
   void DevPwmCmd() {}
@@ -415,6 +425,7 @@ class Rcws {
   RcwsParser parser_;
   // thread read_thread_;
   LibSerial::SerialPort serial_io_;
+  bool reset_stm32_flag_{false};
 };
 
 }  // namespace lra::usb_lib
