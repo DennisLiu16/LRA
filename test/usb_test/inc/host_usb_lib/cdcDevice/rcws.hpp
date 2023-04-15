@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Friday April 14th 2023 9:06:24 pm
+ * Last Modified: Saturday April 15th 2023 10:31:56 am
  *
  * Copyright (c) 2023 None
  *
@@ -19,10 +19,10 @@
 #include <libserial/SerialPort.h>
 #include <libudev.h>
 #include <libusb-1.0/libusb.h>
-#include <spdlog/fmt/fmt.h>
 
 #include <chrono>
 #include <cstdint>
+#include <host_usb_lib/logger/logger.hpp>
 #include <host_usb_lib/parser/rcws_parser.hpp>
 #include <thread>
 
@@ -266,12 +266,6 @@ class Rcws {
     Log("\tDevice Number: {}\n", info.devnum);
     Log("}}\n");
     Log("\n");
-  }
-
-  template <typename... Args>
-  void Log(fmt::format_string<Args...> format_str, Args&&... args) {
-    // TODO: change your logger here
-    fmt::print(format_str, std::forward<Args>(args)...);
   }
 
   /**

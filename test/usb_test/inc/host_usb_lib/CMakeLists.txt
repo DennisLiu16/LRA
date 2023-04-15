@@ -10,6 +10,7 @@ target_include_directories(host_usb_lib
         ${CMAKE_CURRENT_SOURCE_DIR}/command
         ${CMAKE_CURRENT_SOURCE_DIR}/parser
         ${CMAKE_CURRENT_SOURCE_DIR}/userInput
+        ${CMAKE_CURRENT_SOURCE_DIR}/logger
 )
 
 # target_include_directories(host_usb_lib PUBLIC 

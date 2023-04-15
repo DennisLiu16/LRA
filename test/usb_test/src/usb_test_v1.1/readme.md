@@ -12,6 +12,7 @@
   在 CMakeLists.txt 中使用 fftw3 連結
 
 - spdlog
+- [fast-cpp-csv-parser](https://github.com/ben-strasser/fast-cpp-csv-parser.git)
 - libudev
 - libusb-1.0
 - libserial

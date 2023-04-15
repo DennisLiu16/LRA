@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Friday April 14th 2023 8:27:12 pm
+ * Last Modified: Saturday April 15th 2023 9:56:15 am
  *
  * Copyright (c) 2023 None
  *
@@ -61,7 +61,7 @@ class NonBlockingInput {
 
       // general parse
       if (input == "exit" || input == "e" || input == "q" || input == "quit") {
-        fmt::print("exit RCWS CLI\n");
+        fmt::print(fg(fmt::terminal_color::red), "exit RCWS CLI\n");
         exit_flag_.store(true);
         break;
       } else {

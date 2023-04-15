@@ -184,7 +184,7 @@
     "modDate": "Last Modified: ",
     "modDateFormat": "date",
     "include": [],
-    "exclude": ["markdown", "json"],
+    "exclude": ["markdown", "json", "xml", "csv", "yaml", "html", "txt"],
     "includeGlob": [],
     "autoHeader": "manualSave"
   },
@@ -233,7 +233,7 @@
   ],
   "psi-header.templates": [
     {
-      "language": "*",
+      "language": "c",
       "template": [
         "File: <<filename>>",
         "Created Date: <<filecreated('YYYY-MM-DD')>>",
@@ -248,6 +248,34 @@
         "HISTORY:",
         "Date      \t By\tComments",
         "----------\t---\t----------------------------------------------------------"
+      ],
+      "changeLogCaption": "HISTORY:",
+      "changeLogHeaderLineCount": 2,
+      "changeLogEntryTemplate": [
+        "",
+        "<<dateformat(DD-MM-YYYY)>>\t<<initials>>\t"
+      ]
+    },
+    {
+      "language": "cpp",
+      "mapTo": "c"
+    },
+    {
+      "language": "cmake",
+      "template": [
+        "# File: <<filename>>",
+        "# Created Date: <<filecreated('YYYY-MM-DD')>>",
+        "# Author: <<author>>",
+        "# Contact: <<<authoremail>>>",
+        "",
+        "# Last Modified: <<dateformat('dddd MMMM Do YYYY h:mm:ss a')>>",
+        "",
+        "# Copyright (c) <<year>> <<company>>",
+        "# <<licensetext>>",
+        "# -----",
+        "# HISTORY:",
+        "# Date      \t By\tComments",
+        "# ----------\t---\t----------------------------------------------------------"
       ],
       "changeLogCaption": "HISTORY:",
       "changeLogHeaderLineCount": 2,

@@ -9,6 +9,7 @@ usb-1.0
 udev 
 lra_log_util
 host_usb_lib
+lra_fft_lib
 )
 
 # set to bin dir

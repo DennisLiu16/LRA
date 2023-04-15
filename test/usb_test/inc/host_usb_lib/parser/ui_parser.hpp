@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Friday April 14th 2023 8:47:26 pm
+ * Last Modified: Saturday April 15th 2023 10:42:02 am
  *
  * Copyright (c) 2023 None
  *
@@ -18,6 +18,7 @@
 #pragma once
 
 #include <host_usb_lib/cdcDevice/rcws.hpp>
+#include <host_usb_lib/logger/logger.hpp>
 #include <string>
 
 namespace lra::usb_lib {
@@ -82,9 +83,11 @@ class UIParser {
           ListCmds();
           break;
       }
-    }
 
-    Log("\nPlease input args:\n");
+      if (input[0] != 'h') {
+        ListCmds();
+      }
+    }
   }
 
   void RegisterRcws(Rcws* rcws) { rcws_instance_ = rcws; }
@@ -97,15 +100,13 @@ class UIParser {
     Log("\t(r)reset\n");
     Log("\t(s)switch mode\n");
     Log("\t(h)help\n");
+    Log("\t(e/q)exit\n");
+    // Find out solution
+    Log(fg(fmt::terminal_color::bright_blue), "->");
+    fflush(stdout);
   }
 
  private:
-  template <typename... Args>
-  void Log(fmt::format_string<Args...> format_str, Args&&... args) {
-    // TODO: change your logger here
-    fmt::print(format_str, std::forward<Args>(args)...);
-  }
-
   Rcws* rcws_instance_{nullptr};
 };
 }  // namespace lra::usb_lib
