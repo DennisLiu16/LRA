@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Thursday April 13th 2023 5:24:38 pm
+ * Last Modified: Thursday May 4th 2023 10:38:35 pm
  *
  * Copyright (c) 2023 None
  *
@@ -42,5 +42,6 @@ using RcwsCmdType = std::variant<
     Command<FuncInfo<void, LRA_Device_Index_t>>,
     Command<FuncInfo<void, LRA_USB_Mode_t>>, Command<FuncInfo<bool>>,
     Command<FuncInfo<int, int, int>>, Command<FuncInfo<std::vector<RcwsInfo>>>,
-    Command<FuncInfo<RcwsInfo, std::vector<RcwsInfo>, int>>>;
+    Command<FuncInfo<RcwsInfo, std::vector<RcwsInfo>, int>>,
+    Command<FuncInfo<RcwsInfo, std::vector<RcwsInfo>, size_t>>>;
 }  // namespace lra::usb_lib

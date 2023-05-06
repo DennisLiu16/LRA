@@ -114,7 +114,7 @@ endif()
 message(STATUS "${BoldRed}${CMAKE_PROJECT_NAME} Build type: ${CMAKE_BUILD_TYPE} ${ColorReset}")
 
 # sub directories
-add_subdirectory(${PROJECT_SOURCE_DIR}/src)
+# add_subdirectory(${PROJECT_SOURCE_DIR}/src)
 add_subdirectory(${PROJECT_SOURCE_DIR}/test)
 add_subdirectory(${PROJECT_SOURCE_DIR}/third_party)
 

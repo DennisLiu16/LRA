@@ -4,6 +4,8 @@ add_library(host_usb_lib INTERFACE)
 
 target_include_directories(host_usb_lib
     INTERFACE
+        spdlog
+
         ${CMAKE_SOURCE_DIR}/test/usb_test/inc/
         
         ${CMAKE_CURRENT_SOURCE_DIR}/cdcDevice

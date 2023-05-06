@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Saturday April 15th 2023 9:56:15 am
+ * Last Modified: Thursday May 4th 2023 10:12:31 pm
  *
  * Copyright (c) 2023 None
  *
@@ -33,7 +33,8 @@
 namespace lra::usb_lib {
 class NonBlockingInput {
  public:
-  NonBlockingInput() : exit_flag_(false) {
+  NonBlockingInput()
+      : uiparser_([this]() { return PopFirst(); }), exit_flag_(false) {
     input_thread_ = std::thread(&NonBlockingInput::InputLoop, this);
   }
 
@@ -47,7 +48,8 @@ class NonBlockingInput {
     std::unique_lock<std::mutex> lock(input_queue_mutex_);
     input_queue_cv_.wait(
         lock, [this]() { return !input_queue_.empty() || exit_flag_.load(); });
-    if (input_queue_.empty()) return {};
+
+    if (input_queue_.empty()) return {""};
     std::string input = input_queue_.front();
     input_queue_.pop();
     return input;
@@ -61,6 +63,7 @@ class NonBlockingInput {
 
       // general parse
       if (input == "exit" || input == "e" || input == "q" || input == "quit") {
+        uiparser_.Parse("exit");
         fmt::print(fg(fmt::terminal_color::red), "exit RCWS CLI\n");
         exit_flag_.store(true);
         break;

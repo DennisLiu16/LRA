@@ -17,7 +17,13 @@ endif()
 # Create an INTERFACE library
 add_library(lra_fft_lib INTERFACE)
 target_include_directories(lra_fft_lib INTERFACE 
-${FFTW_INCLUDE_DIR}
-${CMAKE_CURRENT_SOURCE_DIR}/file_loader
-${CMAKE_CURRENT_SOURCE_DIR}/fft_wrapper)
-target_link_libraries(lra_fft_lib INTERFACE ${FFTW_LIBRARY})
+# ${FFTW_INCLUDE_DIR}
+host_usb_lib
+# ${CMAKE_CURRENT_SOURCE_DIR}/file_loader
+${CMAKE_CURRENT_SOURCE_DIR}/fft_wrapper
+${CMAKE_CURRENT_SOURCE_DIR}/third_party
+)
+target_link_libraries(lra_fft_lib INTERFACE 
+# ${FFTW_LIBRARY} 
+host_usb_lib 
+fftw3)

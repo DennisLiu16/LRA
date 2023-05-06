@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Saturday April 15th 2023 10:54:38 am
+ * Last Modified: Thursday April 20th 2023 12:23:52 am
  *
  * Copyright (c) 2023 None
  *
@@ -15,15 +15,16 @@
  * ----------------------------------------------------------
  */
 
-#include <fft_lib/file_loader/csv.h>
-#include <spdlog/fmt/bundled/color.h>
-#include <spdlog/fmt/fmt.h>
+#include <fft_lib/third_party/csv.h>
 
+#include <fft_lib/fft_wrapper/fft_helper.hpp>
 #include <filesystem>
 #include <host_usb_lib/cdcDevice/rcws.hpp>
+#include <host_usb_lib/logger/logger.hpp>
 #include <host_usb_lib/userInput/non_blocking_input.hpp>
 #include <string>
 
+using namespace lra::fft_lib;
 using namespace lra::usb_lib;
 
 int main(int argc, char* argv[]) {
@@ -73,8 +74,11 @@ int main(int argc, char* argv[]) {
 
     std::filesystem::path root_path =
         current_bin_path.parent_path().parent_path();
-    std::filesystem::path csv_path =
-        root_path / "test/usb_test/data/f10000.csv";
+    std::filesystem::path data_dir = root_path / "test/usb_test/data";
+
+    std::filesystem::path csv_path = data_dir / "f10000.csv";
+
+    std::filesystem::path fft_log_path = data_dir / "log/fft.txt";
 
     Log(fg(fmt::terminal_color::bright_blue), "Target csv path: {}\n",
         csv_path.string());
@@ -82,8 +86,22 @@ int main(int argc, char* argv[]) {
     io::CSVReader<4> csv_in(csv_path.string());
 
     /* ignore first n lines, n = 18 */
-    constexpr int skip_lines = 18;
-    for (int i = 0; i < skip_lines; i++) {
+    constexpr int skip2sampling_rate = 10;
+    for (int i = 0; i < skip2sampling_rate; i++) {
+      csv_in.next_line();
+    }
+
+    /* get sampling rate */
+    std::string sampling_rate_s, dummy;
+    float sampling_rate;
+
+    csv_in.read_row(sampling_rate_s, sampling_rate, dummy, dummy);
+
+    Log(fg(fmt::terminal_color::bright_green), "Sampling rate: {} Hz\n",
+        sampling_rate);
+
+    constexpr int skip2header = 7;
+    for (int i = 0; i < skip2header; i++) {
       csv_in.next_line();
     }
 
@@ -106,12 +124,37 @@ int main(int argc, char* argv[]) {
 
     Log(fg(fmt::terminal_color::bright_blue),
         "Reading CSV completed, total rows:{}\n", data_t.size());
+
+    auto fft_x_ret = getFFTFreqMag(data_x, sampling_rate);
+    auto fft_y_ret = getFFTFreqMag(data_y, sampling_rate);
+    auto fft_z_ret = getFFTFreqMag(data_z, sampling_rate);
+
+    /* sort them */
+    sortByMag(fft_x_ret);
+
+    /* Log to file */
+    std::filesystem::create_directories(fft_log_path.parent_path());
+    std::FILE* f_fft_log = fopen(fft_log_path.c_str(), "w");
+
+    if (f_fft_log == nullptr) {
+      throw std::runtime_error("fopen failed");
+    }
+
+    printFFTHeader(f_fft_log, sampling_rate);
+    printFreqMag(f_fft_log, fft_x_ret);
+    printFreqMag(f_fft_log, fft_y_ret);
+    printFreqMag(f_fft_log, fft_z_ret);
+
   } catch (std::exception& e) {
     Log("{}\n", e.what());
   }
 
+  /* do fft  */
+
   non_blocking_input.uiparser_.RegisterRcws(&rcws_instance);
   non_blocking_input.uiparser_.ListCmds();
+
+  /*  */
 
   while (!non_blocking_input.GetExitFlag()) {
     non_blocking_input.ProcessInput();
