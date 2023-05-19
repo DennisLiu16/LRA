@@ -373,7 +373,8 @@ int main(int argc, char *argv[]) {
   });
 
   // ws_server.message("drvDriveUpdate", [&mainEventLoop, &ws_server, &main_p, &controller_p](ClientConnection conn,
-  //                                                                                             const Json::Value &args) {
+  //                                                                                             const Json::Value
+  //                                                                                             &args) {
   //   mainEventLoop.post([conn, args, &ws_server, &main_p, &controller_p]() {
   //     // XXX
 
@@ -396,8 +397,6 @@ int main(int argc, char *argv[]) {
   //   });
   // });
 
-  
-
   // create control loop thread
   std::thread controller_t = std::thread([&controller_p, &leave_control_loop, &ws_rtp_cmd, &main_p, &ws_server]() {
     int i = 0;
@@ -411,16 +410,16 @@ int main(int argc, char *argv[]) {
         // auto now = std::chrono::system_clock::now();
         // main_p->LogToDefault(loglevel::info, "t: {0:%Y-%m-%d %H:%M:}{1:%S}", now, now.time_since_epoch());
 
-        if (!on_modify) {          // 沒收到 webpage 的更改指令，安全嗎? mutex
+        if (!on_modify) {  // 沒收到 webpage 的更改指令，安全嗎? mutex
           if (on_run) {
-          controller_p->RunDrv();  // 確保有在運作 >> 請更改這個
-          controller_p->adxl_->SetStandBy(false);
+            controller_p->RunDrv();  // 確保有在運作 >> 請更改這個
+            controller_p->adxl_->SetStandBy(false);
 
-          /* XXX: just for debug */
-          // ws_rtp_cmd[0] = 0x0;
-          // ws_rtp_cmd[1] = 0x0;
-          // ws_rtp_cmd[2] = 0x0;
-          // controller_p->UpdateAllRtp(VecToTuple<3, uint8_t>(ws_rtp_cmd));
+            /* XXX: just for debug */
+            // ws_rtp_cmd[0] = 0x0;
+            // ws_rtp_cmd[1] = 0x0;
+            // ws_rtp_cmd[2] = 0x0;
+            // controller_p->UpdateAllRtp(VecToTuple<3, uint8_t>(ws_rtp_cmd));
           }
 
           if (on_update_cmd) {
@@ -509,10 +508,21 @@ int main(int argc, char *argv[]) {
     return;
   });
 
-  main_p->LogToDefault(loglevel::info, "ws server on");
+  main_p->LogToDefault(loglevel::info, "ws server is going to listen on port: 8765");
 
   // Start the networking thread
-  std::thread serverThread([&ws_server]() { ws_server.run(8765); });
+  std::thread serverThread([&ws_server, &main_p]() {
+    ws_server.setReuseAddr(true);
+    try {
+      ws_server.run(8765);
+    } catch (websocketpp::exception const &e) {
+      main_p->LogToDefault(loglevel::err, "websocket exception happened");
+      main_p->LogToDefault(loglevel::err, "please kill the process which is listening on port 8765 first");
+      exit(0);
+    }
+  });
+
+  main_p->LogToDefault(loglevel::info, "ws server is now listening on port: 8765");
 
   main_p->LogToDefault(loglevel::info, "mainEventLoop on\n");
   system_logger->flush();
@@ -533,14 +543,13 @@ int main(int argc, char *argv[]) {
 
   // blocks here
   mainEventLoop.run();
-  
+
   // usr_it.detach();
 
   /* should never goes to here */
 
-
   // if server down
-  std::cout <<  "going to leave";
+  std::cout << "going to leave";
   leave_control_loop = true;
 
   // drop controller

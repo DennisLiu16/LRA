@@ -40,6 +40,8 @@ void WebsocketServer::run(int port) {
   this->endpoint.run();
 }
 
+void WebsocketServer::setReuseAddr(bool flag) { this->endpoint.set_reuse_addr(flag); }
+
 size_t WebsocketServer::numConnections() {
   // Prevent concurrent access to the list of open connections from multiple threads
   std::lock_guard<std::mutex> lock(this->connectionListMutex);

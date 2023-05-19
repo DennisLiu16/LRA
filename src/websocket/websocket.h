@@ -30,6 +30,8 @@ class WebsocketServer {
   WebsocketServer();
   void run(int port);
 
+  void setReuseAddr(bool flag);
+
   // Returns the number of currently connected clients
   size_t numConnections();
 
@@ -82,7 +84,7 @@ class WebsocketServer {
 
 const vector<string> wsLraMsgLraRequireType{"regAllRequire",       "regDrvRequire",     "regAdxlRequire",
                                             "dataRTNewestRequire", "dataRTKeepRequire", "dataRTStopRequire",
-                                            "moduleInfoRequire", "drvDriveUpdate", "calibrationRequire"};
+                                            "moduleInfoRequire",   "drvDriveUpdate",    "calibrationRequire"};
 
 const vector<string> wsLraMsgUpdateType{
     "webInfoUpdate", "regAllUpdate", "regDrvUpdate", "regAdxlUpdate", "drvCmdUpdate",
@@ -91,9 +93,10 @@ const vector<string> wsLraMsgUpdateType{
 const vector<string> wsLraMsgReciveType{"webInfoUpdateRecv", "regAllUpdateRecv", "regDrvUpdateRecv",
                                         "regAdxlUpdateRecv", "drvCmdUpdateRecv", "drvDriveUpdateRecv"};
 
-const vector<string> wsLraMsgResponseType{
-    "regAllRequireResponse",     "regDrvRequireResponse",     "regAdxlRequireResponse",   "dataRTNewestRequireResponse",
-    "dataRTKeepRequireResponse", "dataRTStopRequireResponse", "moduleInfoRequireResponse", "calibrationRequireResponse"};
+const vector<string> wsLraMsgResponseType{"regAllRequireResponse",     "regDrvRequireResponse",
+                                          "regAdxlRequireResponse",    "dataRTNewestRequireResponse",
+                                          "dataRTKeepRequireResponse", "dataRTStopRequireResponse",
+                                          "moduleInfoRequireResponse", "calibrationRequireResponse"};
 
 };  // namespace lra::websocket
 
