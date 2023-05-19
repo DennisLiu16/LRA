@@ -18,6 +18,9 @@
  */
 
 int main(int argc, char *argv[]) {
+  std::cout << "RCWS_TapticEngine Version StartUp! Init..." << std::endl;
+  std::cout << "Details listed in system.log" << std::endl;
+  std::cout << "Use Crtl + C to leave in this state." << std::endl;
   // create logunit settings
   std::shared_ptr<LogUnit> main_p = LogUnit::CreateLogUnit("main");
   std::shared_ptr<LogUnit> acc_p = LogUnit::CreateLogUnit("acc_data");
@@ -529,28 +532,32 @@ int main(int argc, char *argv[]) {
 
   std::shared_ptr<asio::io_service::work> work = make_shared<asio::io_service::work>(mainEventLoop);
 
-  // std::thread usr_it([&work]() {
-  //   while (true) {
-  //     // get usr input
-  //     char x;
-  //     std::cin >> x;
-  //     if (x == 'q') {
-  //       work.reset();
-  //       break;
-  //     }
-  //   }
-  // });
+  main_p->LogToDefault(loglevel::info, "user interface enable\n");
+  std::cout << "user interface enable! input 'q' to leave" << std::endl;
 
-  // blocks here
+  std::thread usr_it([&work]() {
+    while (true) {
+      // get usr input
+      char x;
+      std::cin >> x;
+      if (x == 'q') {
+        work.reset();
+        break;
+      }
+    }
+  });
+  usr_it.detach();
+
   mainEventLoop.run();
 
-  // usr_it.detach();
-
-  /* should never goes to here */
-
-  // if server down
-  std::cout << "going to leave";
+  std::cout << "going to leave" << std::endl;
+  main_p->LogToDefault(loglevel::info, "Leaving...\n");
   leave_control_loop = true;
+  controller_t.join();
+
+  // server drop
+  ws_server.stop();
+  serverThread.join();
 
   // drop controller
   controller_p->CancelMeasureTask();

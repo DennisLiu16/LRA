@@ -259,7 +259,7 @@ std::tuple<Drv2605lInfo, Drv2605lInfo, Drv2605lInfo, Adxl355::Acc3> Controller::
 
   auto origin_offset = adxl_->GetOffSet();
 
-  // combine 
+  // combine
   acc_avg.data.x += origin_offset.data.x;
   acc_avg.data.y += origin_offset.data.y;
   acc_avg.data.z += origin_offset.data.z;
@@ -304,7 +304,7 @@ void Controller::CancelMeasureTask() {
 
     try {  // wait for the thread leaving
       adxl355_measure_t_.join();
-      logunit_->LogToDefault(loglevel::err, "MainController CancelMeasureTask successfully\n");
+      logunit_->LogToDefault(loglevel::info, "MainController CancelMeasureTask successfully\n");
     } catch (const std::exception& e) {
       logunit_->LogToDefault(loglevel::err, "MainController CancelMeasureTask failed\n, detail: {}", e.what());
     }

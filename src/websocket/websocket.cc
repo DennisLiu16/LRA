@@ -36,8 +36,17 @@ void WebsocketServer::run(int port) {
   this->endpoint.listen(port);
   this->endpoint.start_accept();
 
+  this->running_flag = true;
+
   // Start the Asio event loop
   this->endpoint.run();
+}
+
+void WebsocketServer::stop() {
+  if (this->running_flag == true) {
+    this->endpoint.stop();
+    this->running_flag = false;
+  }
 }
 
 void WebsocketServer::setReuseAddr(bool flag) { this->endpoint.set_reuse_addr(flag); }

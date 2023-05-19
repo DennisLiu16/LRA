@@ -28,7 +28,10 @@ typedef websocketpp::connection_hdl ClientConnection;
 class WebsocketServer {
  public:
   WebsocketServer();
+
   void run(int port);
+
+  void stop();
 
   void setReuseAddr(bool flag);
 
@@ -72,6 +75,7 @@ class WebsocketServer {
   void onClose(ClientConnection conn);
   void onMessage(ClientConnection conn, WebsocketEndpoint::message_ptr msg);
 
+  bool running_flag{false};
   asio::io_service eventLoop;
   WebsocketEndpoint endpoint;
   vector<ClientConnection> openConnections;
