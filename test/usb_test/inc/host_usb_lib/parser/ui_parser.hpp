@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Friday May 5th 2023 3:23:23 am
+ * Last Modified: Monday May 15th 2023 11:31:24 am
  *
  * Copyright (c) 2023 None
  *
@@ -140,6 +140,9 @@ class UIParser {
               break;
             }
           }
+
+          case 'p': {
+          } break;
 
           case 'g': {
             std::vector<uint8_t> data;

@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Friday May 5th 2023 3:24:22 am
+ * Last Modified: Saturday May 6th 2023 10:18:50 pm
  *
  * Copyright (c) 2023 None
  *
@@ -157,7 +157,7 @@ class RcwsParser {
 
         int index = msg[4];
         std::string content = fmt::format("\n{:^11} | {:^10} | {:^10}\n\n",
-                                          "[Index]", "Hex", "Binary");
+                                          "Iaddr", "Hex", "Binary");
 
         // msg_header (3 bytes) + get_reg header (3 bytes too)
         auto reg_begin = msg.begin() + 6;

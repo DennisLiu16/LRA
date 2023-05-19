@@ -222,6 +222,7 @@ std::map<LRA_USB_Mode_t, std::string> usb_mode_map = {
 
 std::map<LRA_USB_IN_Cmd_t, std::string> usb_in_cmd_type_map = {
     {USB_IN_CMD_INIT, "USB_IN_CMD_INIT"},
+    {USB_IN_CMD_SYS_INFO, "USB_IN_CMD_SYS_INFO"},
     {USB_IN_CMD_PARSE_ERR, "USB_IN_CMD_PARSE_ERR"},
     {USB_IN_CMD_GET_REG, "USB_IN_CMD_GET_REG"},
     {USB_IN_CMD_RESET_DEVICE, "USB_IN_CMD_RESET_DEVICE"},
