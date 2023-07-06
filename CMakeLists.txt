@@ -115,8 +115,9 @@ message(STATUS "${BoldRed}${CMAKE_PROJECT_NAME} Build type: ${CMAKE_BUILD_TYPE} 
 
 # sub directories
 # add_subdirectory(${PROJECT_SOURCE_DIR}/src)
-add_subdirectory(${PROJECT_SOURCE_DIR}/test)
 add_subdirectory(${PROJECT_SOURCE_DIR}/third_party)
+add_subdirectory(${PROJECT_SOURCE_DIR}/test)
+
 
 # ref 
 # https://stackoverflow.com/questions/67385282/cmake-set-compile-options-and-compile-features-per-project

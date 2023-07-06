@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Monday May 15th 2023 11:31:24 am
+ * Last Modified: Thursday July 6th 2023 5:33:32 pm
  *
  * Copyright (c) 2023 None
  *
@@ -17,10 +17,12 @@
 
 #pragma once
 
+#include <host_usb_lib/cdcDevice/rcws.h>
+#include <host_usb_lib/logger/logger.h>
+
 #include <functional>
-#include <host_usb_lib/cdcDevice/rcws.hpp>
-#include <host_usb_lib/logger/logger.hpp>
 #include <string>
+#include <util/range_bound.hpp>
 
 namespace lra::usb_lib {
 // TODO: remove rcws, make it more general
@@ -127,12 +129,65 @@ class UIParser {
 
             try {
               uint8_t mode = std::stoi(s_mode);
-              if (mode == LRA_USB_CRTL_MODE || mode == LRA_USB_DATA_MODE) {
-                rcws_instance_->DevSwitchMode((LRA_USB_Mode_t)mode);
+              if (mode != LRA_USB_CRTL_MODE && mode != LRA_USB_DATA_MODE) {
+                Log(fg(fmt::terminal_color::bright_red),
+                    "Unknown mode{}: input 2(CRTL) or 3(DATA) only\n", mode);
                 break;
               }
-              Log(fg(fmt::terminal_color::bright_red),
-                  "Unknown mode{}: input 2(CRTL) or 3(DATA) only\n", mode);
+
+              if (mode == LRA_USB_DATA_MODE) {
+                std::string next_acc_file_name =
+                    rcws_instance_->GetNextFileName(rcws_instance_->data_path_,
+                                                    "acc");
+                std::string next_pwm_file_name =
+                    rcws_instance_->GetNextFileName(rcws_instance_->data_path_,
+                                                    "pwm");
+
+                std::string next_acc_full_path =
+                    rcws_instance_->data_path_ + "/" + next_acc_file_name;
+                std::string next_pwm_full_path =
+                    rcws_instance_->data_path_ + "/" + next_pwm_file_name;
+
+                FILE* acc_tmp = fopen(next_acc_full_path.c_str(), "a");
+                FILE* pwm_tmp = fopen(next_pwm_full_path.c_str(), "a");
+
+                if (acc_tmp != nullptr) {
+                  rcws_instance_->UpdateAccFileHandle(acc_tmp);
+                  Log(fg(fmt::terminal_color::bright_blue),
+                      "open acc file:{}\n", next_acc_full_path);
+                  rcws_instance_->UpdateAccFileName(next_acc_file_name);
+                }
+
+                if (pwm_tmp != nullptr) {
+                  rcws_instance_->UpdatePwmFileHandle(pwm_tmp);
+                  Log(fg(fmt::terminal_color::bright_blue),
+                      "open pwm file:{}\n", next_pwm_full_path);
+                  rcws_instance_->UpdatePwmFileName(next_pwm_full_path);
+                }
+
+              } else {
+                FILE* acc_file = rcws_instance_->GetAccFileHandle();
+                FILE* pwm_file = rcws_instance_->GetPwmFileHandle();
+
+                if (acc_file != nullptr) {
+                  fclose(acc_file);
+                  Log(fg(fmt::terminal_color::bright_blue),
+                      "close acc file:{}\n", rcws_instance_->GetAccFileName());
+                  rcws_instance_->UpdateAccFileName("");
+                  rcws_instance_->UpdateAccFileHandle(nullptr);
+                }
+
+                if (pwm_file != nullptr) {
+                  fclose(pwm_file);
+                  Log(fg(fmt::terminal_color::bright_blue),
+                      "close pwm file:{}\n", rcws_instance_->GetPwmFileName());
+                  rcws_instance_->UpdatePwmFileName("");
+                  rcws_instance_->UpdatePwmFileHandle(nullptr);
+                }
+              }
+
+              rcws_instance_->DevSwitchMode((LRA_USB_Mode_t)mode);
+
               break;
             } catch (std::exception& e) {
               Log(fg(fmt::terminal_color::bright_red),
@@ -141,7 +196,58 @@ class UIParser {
             }
           }
 
+          /* add auto generate function */
           case 'p': {
+            /* 6 floats POD */
+            RcwsPwmInfo info;
+            constexpr size_t float_num = sizeof(RcwsPwmInfo) / sizeof(float);
+            float fdata[float_num];
+
+            char axis = 'x';
+            std::string s_amp = "amp: from 0 < amp < 1000";
+            std::string s_freq = "freq: from 1.0 < freq < 10.0";
+
+            lra::util::Range amp_range(0, 1000);
+            lra::util::Range freq_range(1.0, 10.0);
+
+            /* get 6 floats */
+            int valid_float = 0;
+            while (valid_float < float_num) {
+              char axis_offset = valid_float / 2;
+              std::string hint = Format("{}-{}\n", (char)(axis + axis_offset),
+                                        (valid_float % 2) ? s_freq : s_amp);
+              try {
+                float float_candidate = GetFloat(hint);
+                bool float_is_ok = false;
+
+                if (valid_float % 2) {
+                  float_is_ok = freq_range.isWithinRange(float_candidate);
+                } else {
+                  float_is_ok = amp_range.isWithinRange(float_candidate);
+                }
+
+                if (float_is_ok) {
+                  fdata[valid_float] = float_candidate;
+                  valid_float++;
+                  continue;
+                }
+
+                Log("Invalid Input\n");
+
+              } catch (std::exception& e) {
+                Log("{}: Please check your input!\n", e.what());
+              }
+            }
+
+            // assign to RcwsPwmInfo
+            memcpy(&info, fdata, sizeof(RcwsPwmInfo));
+
+            // TODO: create PrintRcwsPwmInfo
+            rcws_instance_->PrintRcwsPwmInfo(info);
+
+            // update to RCWS
+            rcws_instance_->DevPwmCmd(info);
+
           } break;
 
           case 'g': {
@@ -230,6 +336,7 @@ class UIParser {
     Log("\t(r)reset\n");
     Log("\t(s)switch mode\n");
     Log("\t(g)get register\n");
+    Log("\t(p)pwm cmd\n");
 
     Log("\nGeneral commands:\n");
     Log("\t(e/q)exit\n");
@@ -252,5 +359,13 @@ class UIParser {
   NextInputCallback next_input_callback_;
 
   Rcws* rcws_instance_{nullptr};
+
+  /*  private functions */
+  float GetFloat(const std::string& output) {
+    Log("{}", output);
+
+    std::string s_float = next_input_callback_();
+    return std::stof(s_float);
+  }
 };
 }  // namespace lra::usb_lib

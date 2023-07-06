@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Thursday May 4th 2023 10:38:35 pm
+ * Last Modified: Thursday July 6th 2023 5:29:34 pm
  *
  * Copyright (c) 2023 None
  *
@@ -17,7 +17,8 @@
 
 #pragma once
 
-#include <drv_stm_lib/lra_usb_defines.hpp>
+#include <drv_stm_lib/lra_usb_defines.h>
+
 #include <host_usb_lib/command/command_impl.hpp>
 #include <host_usb_lib/command/function_info.hpp>
 #include <string>
@@ -35,6 +36,17 @@ typedef struct {
   std::string serialnum;
   std::string manufacturer;
 } RcwsInfo;
+
+typedef struct {
+  float amp;
+  float freq;
+} PwmInfo;
+
+typedef struct {
+  PwmInfo x;
+  PwmInfo y;
+  PwmInfo z;
+} RcwsPwmInfo;
 
 using RcwsCmdType = std::variant<
     std::monostate, Command<FuncInfo<void>>, Command<FuncInfo<void, int>>,

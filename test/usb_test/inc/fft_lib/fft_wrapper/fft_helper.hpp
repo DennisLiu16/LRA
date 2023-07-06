@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Friday April 21st 2023 2:19:33 am
+ * Last Modified: Thursday July 6th 2023 5:32:48 pm
  *
  * Copyright (c) 2023 None
  *
@@ -16,12 +16,12 @@
  */
 
 #include <fftw3.h>
+#include <host_usb_lib/logger/logger.h>
 #include <spdlog/fmt/chrono.h>
 #include <spdlog/fmt/ostr.h>
 
 #include <chrono>
 #include <complex>
-#include <host_usb_lib/logger/logger.hpp>
 #include <numeric>
 #include <span>
 #include <utility>

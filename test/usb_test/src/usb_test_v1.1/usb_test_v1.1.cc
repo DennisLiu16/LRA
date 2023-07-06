@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Thursday April 20th 2023 12:23:52 am
+ * Last Modified: Thursday July 6th 2023 5:33:35 pm
  *
  * Copyright (c) 2023 None
  *
@@ -16,11 +16,11 @@
  */
 
 #include <fft_lib/third_party/csv.h>
+#include <host_usb_lib/cdcDevice/rcws.h>
+#include <host_usb_lib/logger/logger.h>
 
 #include <fft_lib/fft_wrapper/fft_helper.hpp>
 #include <filesystem>
-#include <host_usb_lib/cdcDevice/rcws.hpp>
-#include <host_usb_lib/logger/logger.hpp>
 #include <host_usb_lib/userInput/non_blocking_input.hpp>
 #include <string>
 
@@ -34,6 +34,7 @@ int main(int argc, char* argv[]) {
   NonBlockingInput non_blocking_input;
 
   auto rcws_instance = lra::usb_lib::Rcws();
+  rcws_instance.data_path_ = "/home/dennis/develop/LRA/data/rcws";
 
   // auto rcws_list = rcws_instance.FindAllRcws();
 
@@ -47,8 +48,8 @@ int main(int argc, char* argv[]) {
   //   std::string usr_input = non_blocking_input.PopFirst();
   //   try {
   //     int ret = std::stoi(usr_input);
-  //     if (ret >= rcws_list.size()) throw std::runtime_error("out of range");
-  //     return ret;
+  //     if (ret >= rcws_list.size()) throw std::runtime_error("out of
+  //     range"); return ret;
   //   } catch (std::exception& e) {
   //     fmt::print("Throw: {}\n", e.what());
   //     fmt::print("Please check your input\n");

@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Thursday April 13th 2023 5:22:20 pm
+ * Last Modified: Thursday July 6th 2023 5:29:37 pm
  *
  * Copyright (c) 2023 None
  *
@@ -15,7 +15,8 @@
  * ----------------------------------------------------------
  */
 #pragma once
-#include <drv_stm_lib/lra_usb_defines.hpp>
+#include <drv_stm_lib/lra_usb_defines.h>
+
 #include <host_usb_lib/cdcDevice/rcws_info.hpp>
 #include <variant>
 

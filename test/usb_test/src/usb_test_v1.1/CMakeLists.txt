@@ -5,6 +5,7 @@ add_executable(lra_usb_util_test_v1.1 usb_test_v1.1.cc)
 target_link_libraries(lra_usb_util_test_v1.1 PRIVATE 
 host_usb_lib
 lra_fft_lib)
+
 target_include_directories(lra_usb_util_test_v1.1 PRIVATE 
 host_usb_lib
 lra_fft_lib

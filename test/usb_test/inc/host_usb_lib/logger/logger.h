@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Wednesday April 19th 2023 7:03:56 pm
+ * Last Modified: Thursday July 6th 2023 5:31:24 pm
  *
  * Copyright (c) 2023 None
  *
@@ -20,10 +20,12 @@
 #include <spdlog/fmt/bundled/color.h>
 #include <spdlog/fmt/fmt.h>
 
+#include <mutex>
+
 namespace lra::usb_lib {
 
 /* remove mutex if using spdlog to file */
-std::mutex stdout_print_mutex;
+extern std::mutex stdout_print_mutex;
 
 /* not thread safe */
 template <typename... Args>
@@ -44,6 +46,11 @@ void Log(const fmt::v8::text_style& ts, const S& format_str,
          const Args&... args) {
   std::unique_lock<std::mutex> lock(stdout_print_mutex);
   fmt::print(ts, format_str, args...);
+}
+
+template <typename... Args>
+std::string Format(fmt::format_string<Args...> format_str, Args&&... args) {
+  return fmt::format(format_str, std::forward<Args>(args)...);
 }
 
 }  // namespace lra::usb_lib
