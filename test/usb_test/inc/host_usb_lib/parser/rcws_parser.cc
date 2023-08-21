@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Thursday July 6th 2023 5:33:18 pm
+ * Last Modified: Friday July 7th 2023 9:58:02 am
  *
  * Copyright (c) 2023 None
  *
@@ -29,6 +29,8 @@
 namespace lra::usb_lib {
 
 void RcwsParser::Parse(const std::vector<uint8_t>& msg) {
+  if (msg.size() == 0) return;
+
   std::string log_msg;
 
   switch (msg[0]) {
@@ -86,9 +88,10 @@ void RcwsParser::Parse(const std::vector<uint8_t>& msg) {
       ParsePwmInData(pos, &info, &t);
 
       if (prcws_ && prcws_->GetPwmFileHandle()) {
-        Log(prcws_->GetPwmFileHandle(), "{:.3f}, {}, {}, {}, {}, {}, {}\n", t,
-            info.x.amp, info.x.freq, info.y.amp, info.y.freq, info.z.amp,
-            info.z.freq);
+        FILE* target = prcws_->GetPwmFileHandle();
+        Log(target, "{:.3f}, {}, {}, {}, {}, {}, {}\n", t, info.x.amp,
+            info.x.freq, info.y.amp, info.y.freq, info.z.amp, info.z.freq);
+        fflush(target);
       }
 
       break;
@@ -104,6 +107,11 @@ void RcwsParser::Parse(const std::vector<uint8_t>& msg) {
         break;
       }
 
+      // verify \r\n
+      if (msg[data_len + 1] != '\r' || msg[data_len + 2] != '\n') {
+        log_msg = fmt::format("Acc data \r\n wrong place!!");
+      }
+
       uint16_t data_set_len = (data_len - 2) / sizeof(ADXL355_DataSet_t);
       std::string acc_log_content;
       // 30 is approximately number of one line of log data
@@ -117,12 +125,14 @@ void RcwsParser::Parse(const std::vector<uint8_t>& msg) {
         memcpy(&acc_data_set, ptr + i * sizeof(ADXL355_DataSet_t),
                sizeof(ADXL355_DataSet_t));
         fmt::format_to(out, "{:.6f}, {:.4f}, {:.4f}, {:.4f}\n", acc_data_set.t,
-                       acc_data_set.t, acc_data_set.data[0],
-                       acc_data_set.data[1], acc_data_set.data[2]);
+                       acc_data_set.data[0], acc_data_set.data[1],
+                       acc_data_set.data[2]);
       }
 
       if (prcws_ && prcws_->GetAccFileHandle()) {
-        Log(prcws_->GetAccFileHandle(), "{}", acc_log_content);
+        FILE* target = prcws_->GetAccFileHandle();
+        Log(target, "{}", acc_log_content);
+        fflush(target);
       }
 
       break;
@@ -172,7 +182,7 @@ void RcwsParser::Parse(const std::vector<uint8_t>& msg) {
 
     /* never get here */
     default:
-      log_msg = "You should never get here";
+      log_msg = Format("Wrong Cmd type: {}", msg[0]);
       break;
   }
 

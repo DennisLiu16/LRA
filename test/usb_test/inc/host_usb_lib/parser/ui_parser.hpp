@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Thursday July 6th 2023 5:33:32 pm
+ * Last Modified: Saturday July 22nd 2023 9:08:25 am
  *
  * Copyright (c) 2023 None
  *
@@ -26,6 +26,13 @@
 
 namespace lra::usb_lib {
 // TODO: remove rcws, make it more general
+
+class PathDoesNotExistException : public std::runtime_error {
+ public:
+  PathDoesNotExistException(const std::filesystem::path& p)
+      : std::runtime_error("Path does not exist: " + p.string()) {}
+};
+
 class UIParser {
  public:
   using NextInputCallback = std::function<std::string()>;
@@ -189,7 +196,7 @@ class UIParser {
               rcws_instance_->DevSwitchMode((LRA_USB_Mode_t)mode);
 
               break;
-            } catch (std::exception& e) {
+            } catch (const std::invalid_argument& e) {
               Log(fg(fmt::terminal_color::bright_red),
                   "switch mode stoi failed\n");
               break;
@@ -198,56 +205,144 @@ class UIParser {
 
           /* add auto generate function */
           case 'p': {
-            /* 6 floats POD */
-            RcwsPwmInfo info;
-            constexpr size_t float_num = sizeof(RcwsPwmInfo) / sizeof(float);
-            float fdata[float_num];
+            ListMap(pwm_cmd_mode_map);
 
-            char axis = 'x';
-            std::string s_amp = "amp: from 0 < amp < 1000";
-            std::string s_freq = "freq: from 1.0 < freq < 10.0";
+            std::string s_mode = next_input_callback_();
 
-            lra::util::Range amp_range(0, 1000);
-            lra::util::Range freq_range(1.0, 10.0);
-
-            /* get 6 floats */
-            int valid_float = 0;
-            while (valid_float < float_num) {
-              char axis_offset = valid_float / 2;
-              std::string hint = Format("{}-{}\n", (char)(axis + axis_offset),
-                                        (valid_float % 2) ? s_freq : s_amp);
-              try {
-                float float_candidate = GetFloat(hint);
-                bool float_is_ok = false;
-
-                if (valid_float % 2) {
-                  float_is_ok = freq_range.isWithinRange(float_candidate);
-                } else {
-                  float_is_ok = amp_range.isWithinRange(float_candidate);
-                }
-
-                if (float_is_ok) {
-                  fdata[valid_float] = float_candidate;
-                  valid_float++;
-                  continue;
-                }
-
-                Log("Invalid Input\n");
-
-              } catch (std::exception& e) {
-                Log("{}: Please check your input!\n", e.what());
+            try {
+              uint8_t mode = std::stoi(s_mode);
+              if (mode != RCWS_PWM_MANUAL_MODE && mode != RCWS_PWM_FILE_MODE) {
+                Log(fg(fmt::terminal_color::bright_red), "Invalid mode: {} \n",
+                    mode);
+                break;
               }
+
+              if (mode == RCWS_PWM_MANUAL_MODE) {
+                /* 6 floats POD */
+                RcwsPwmInfo info;
+                constexpr size_t float_num =
+                    sizeof(RcwsPwmInfo) / sizeof(float);
+                float fdata[float_num];
+
+                char axis = 'x';
+                std::string s_amp = "amp: from 0 < amp < 1000";
+                std::string s_freq = "freq: from 1.0 < freq < 10.0";
+
+                lra::util::Range amp_range(0, 1000);
+                lra::util::Range freq_range(1.0, 10.0);
+
+                /* get 6 floats */
+                int valid_float = 0;
+                while (valid_float < float_num) {
+                  char axis_offset = valid_float / 2;
+                  std::string hint =
+                      Format("{}-{}\n", (char)(axis + axis_offset),
+                             (valid_float % 2) ? s_freq : s_amp);
+                  try {
+                    float float_candidate = GetFloat(hint);
+                    bool float_is_ok = false;
+
+                    if (valid_float % 2) {
+                      float_is_ok = freq_range.isWithinRange(float_candidate);
+                    } else {
+                      float_is_ok = amp_range.isWithinRange(float_candidate);
+                    }
+
+                    if (float_is_ok) {
+                      fdata[valid_float] = float_candidate;
+                      valid_float++;
+                      continue;
+                    }
+
+                    Log("Invalid Input\n");
+
+                  } catch (std::exception& e) {
+                    Log("{}: Please check your input!\n", e.what());
+                  }
+                }
+
+                // assign to RcwsPwmInfo
+                memcpy(&info, fdata, sizeof(RcwsPwmInfo));
+
+                // TODO: create PrintRcwsPwmInfo
+                rcws_instance_->PrintRcwsPwmInfo(info);
+
+                // update to RCWS
+                rcws_instance_->DevPwmCmd(info);
+              } else {  // RCWS_PWM_FILE_MODE
+
+                /* TODO: check is running */
+                if (rcws_instance_->PwmCmdThreadRunning()) {
+                  Log("Pwm cmd thread is already running, if you want to "
+                      "cancel it, please input 'y' or 'yes'\n");
+                  std::string s_cancel = next_input_callback_();
+
+                  /* cancel, clean the queue */
+                  if (s_cancel == "y" || s_cancel == "yes") {
+                    rcws_instance_->PwmCmdThreadClose();
+                    rcws_instance_->CleanPwmCmdQueue();
+                  } else
+                    break;
+
+                } else {  // load new pwm cmd csv
+                  std::filesystem::path path =
+                      rcws_instance_->data_path_ + "/pwm_cmd_file";
+
+                  if (!std::filesystem::exists(path)) {
+                    throw PathDoesNotExistException(path);
+                  }
+
+                  /* list all csv */
+                  int file_index = 0;
+                  std::map<int, std::string> csvFiles;
+
+                  for (const auto& entry :
+                       std::filesystem::directory_iterator(path)) {
+                    if (entry.path().extension() == ".csv") {
+                      csvFiles[file_index++] = entry.path().string();
+                    }
+                  }
+
+                  if (csvFiles.size() == 0) {
+                    Log(fg(fmt::terminal_color::bright_red),
+                        "There's no any file in given directory: {}\n", path);
+                    break;
+                  }
+
+                  ListMap(csvFiles);
+
+                  /* user choose csv */
+                  std::string hint = "Choose the file you want to import\n";
+                  int csv_index = GetInt(hint);
+                  if (!csvFiles.count(csv_index)) {
+                    Log("Invalid index: {}\n", csv_index);
+                    break;
+                  }
+
+                  std::string csv_file_path = csvFiles[csv_index];
+
+                  /* recursive or not */
+                  Log("recursive simulate given csv\n. Input 'y' or 'yes' if "
+                      "you want to simulate in forever loop\n");
+                  std::string recursive_y = next_input_callback_();
+
+                  if (recursive_y == "y" || recursive_y == "yes") {
+                    rcws_instance_->PwmCmdSetRecursive(true);
+                  } else {
+                    rcws_instance_->PwmCmdSetRecursive(false);
+                  }
+
+                  // create task
+                  rcws_instance_->StartPwmCmdThread(csv_file_path);
+                }
+              }
+            } catch (const PathDoesNotExistException& e) {
+              Log(fg(fmt::terminal_color::bright_red), "path not exist: {}\n",
+                  e.what());
+            } catch (std::exception& e) {
+              Log(fg(fmt::terminal_color::bright_red), "stoi failed\n");
+              break;
             }
-
-            // assign to RcwsPwmInfo
-            memcpy(&info, fdata, sizeof(RcwsPwmInfo));
-
-            // TODO: create PrintRcwsPwmInfo
-            rcws_instance_->PrintRcwsPwmInfo(info);
-
-            // update to RCWS
-            rcws_instance_->DevPwmCmd(info);
-
           } break;
 
           case 'g': {
@@ -362,6 +457,13 @@ class UIParser {
 
   /*  private functions */
   float GetFloat(const std::string& output) {
+    Log("{}", output);
+
+    std::string s_float = next_input_callback_();
+    return std::stof(s_float);
+  }
+
+  int GetInt(const std::string& output) {
     Log("{}", output);
 
     std::string s_float = next_input_callback_();

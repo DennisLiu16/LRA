@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Thursday July 6th 2023 5:32:59 pm
+ * Last Modified: Sunday August 20th 2023 5:17:25 pm
  *
  * Copyright (c) 2023 None
  *
@@ -28,6 +28,7 @@
 #include <thread>
 
 // rcws libs
+#include <fft_lib/third_party/csv.h>
 #include <host_usb_lib/logger/logger.h>
 #include <host_usb_lib/parser/rcws_parser.h>
 
@@ -37,6 +38,13 @@
 #include "rcws_info.hpp"
 
 namespace lra::usb_lib {
+RCWS_IO_Exception::RCWS_IO_Exception(const std::string& message)
+    : errorMessage(message) {}
+
+const char* RCWS_IO_Exception::what() const noexcept {
+  return errorMessage.c_str();
+}
+
 Rcws::Rcws() {
   _RegisterAllCommands();
   parser_.RegisterDevice(this);
@@ -45,7 +53,13 @@ Rcws::Rcws() {
 
 Rcws::~Rcws() {
   read_thread_exit_ = true;
-  parser_thread_.join();
+  pwm_cmd_thread_exit_ = true;
+  if (parser_thread_.joinable()) {
+    parser_thread_.join();
+  }
+  if (pwm_cmd_thread_.joinable()) {
+    pwm_cmd_thread_.join();
+  }
 }
 
 // TODO: rewrite open, chooseRcws
@@ -91,8 +105,14 @@ bool Rcws::Close() {
         "Serial Port already closed\n");
     return false;
   }
-  serial_io_.SetDTR(false);
-  serial_io_.Close();
+  try {
+    serial_io_.SetDTR(false);
+    serial_io_.Close();
+  } catch (const std::exception& e) {
+    Log(fg(fmt::terminal_color::bright_red),
+        "Exception: Serial port closed failed\n");
+    serial_io_ = LibSerial::SerialPort();
+  }
   Log(fg(fmt::terminal_color::bright_green), "Serial port closed\n");
   return !serial_io_.IsOpen();
 }
@@ -343,7 +363,7 @@ std::vector<uint8_t> Rcws::RcwsPwmInfoToVec(const RcwsPwmInfo& info) {
   uint8_t* cursor = reinterpret_cast<uint8_t*>(data);
 
   auto is_end_of_axis = [para_num_per_axis](size_t index) {
-    return (index + 1) % para_num_per_axis != 0;
+    return (index + 1) % para_num_per_axis == 0;
   };
 
   for (size_t i = 0; i < buf_len; ++i) {
@@ -385,11 +405,11 @@ std::vector<uint8_t> Rcws::ReadRcwsMsg() {
   data_len = header[1] << 8 | header[2];
 
   try {
-    serial_io_.Read(body, data_len, 1000);
+    serial_io_.Read(body, data_len, 25);
     header.insert(header.end(), body.begin(), body.end());
     return header;
   } catch (const std::exception& e) {
-    Log("ReadRcwsMsg exception: {}\n", e.what());
+    // Log("ReadRcwsMsg exception: {}\n", e.what());
     return {};
   }
 }
@@ -415,6 +435,123 @@ void Rcws::ParseTask() {
       parser_.Parse(msg);
     }
   }
+}
+
+void Rcws::PwmCmdTask(std::string path) {
+  /* load csv file */
+  io::CSVReader<7> csv(path);
+
+  /* read data */
+  RcwsPwmCmd cmd;
+  float current_time = -1;
+  float time_bias = -1;
+  bool the_first_flag = true;
+
+  // the unit of current time is second
+  while (csv.read_row(current_time, cmd.info.x.amp, cmd.info.x.freq,
+                      cmd.info.y.amp, cmd.info.y.freq, cmd.info.z.amp,
+                      cmd.info.z.freq)) {
+    if (the_first_flag) {
+      time_bias = current_time;
+      the_first_flag = false;
+      cmd.t_ms = 0;
+    }
+
+    else
+      cmd.t_ms = (current_time - time_bias) * 1000;
+
+    // push to queue
+    pwm_cmd_q_.push(cmd);
+  }
+
+  const size_t q_total_len = pwm_cmd_q_.size();
+  int last_percentage_print = -1;
+
+  /* print length */
+  Log("\n"
+      "Load pwm csv file completed\n"
+      "Size:{} \n",
+      pwm_cmd_q_.size());
+
+  Log(fg(fmt::terminal_color::bright_blue), "Start to simulate\n");
+
+  /* init time vars */
+  auto start_timepoint = std::chrono::high_resolution_clock::now();
+
+  /* push into queue */
+  while (!pwm_cmd_q_.empty() && !pwm_cmd_thread_exit_) {
+    auto next_pwm_cmd = pwm_cmd_q_.front();
+
+    // wait for time interval expired, spin lock
+    while (std::chrono::duration_cast<std::chrono::milliseconds>(
+               std::chrono::high_resolution_clock::now() - start_timepoint)
+               .count() < next_pwm_cmd.t_ms) {
+    }
+
+    try {
+      DevPwmCmd(next_pwm_cmd.info);
+    } catch (const std::exception& e) {
+      Log(fg(fmt::terminal_color::bright_red),
+          "Exception: PWM cmd to RCWS failed\n");
+      pwm_cmd_thread_exit_ = true;
+    }
+
+    if (recursive_flag_) {
+      pwm_cmd_q_.push(next_pwm_cmd);
+    } else {
+      int percentage = (pwm_cmd_q_.size() * 100) / q_total_len;
+
+      if (percentage % 5 == 0 && percentage != last_percentage_print) {
+        Log(fg(fmt::terminal_color::bright_blue), "Pwm cmd remain {} %\n",
+            percentage);
+        last_percentage_print = percentage;
+      }
+    }
+
+    // pop
+    pwm_cmd_q_.pop();
+  }
+
+  /* TODO: stop vibration */
+  RcwsPwmInfo _stop_info = {.x = {.amp = 500, .freq = 5},
+                            .y = {.amp = 500, .freq = 5},
+                            .z = {.amp = 500, .freq = 5}
+
+  };
+
+  try {
+    DevPwmCmd(_stop_info);
+  } catch (const std::exception& e) {
+    Log(fg(fmt::terminal_color::bright_red),
+        "Exception: PWM ended cmd transmit failed\n");
+    pwm_cmd_thread_exit_ = true;
+  }
+
+  Log(fg(fmt::terminal_color::bright_blue), "Pwm task close\n");
+}
+
+bool Rcws::PwmCmdThreadRunning() { return pwm_cmd_thread_exit_; }
+
+void Rcws::CleanPwmCmdQueue() {
+  std::queue<RcwsPwmCmd> empty;
+  pwm_cmd_q_.swap(empty);
+}
+
+void Rcws::PwmCmdThreadClose() {
+  pwm_cmd_thread_exit_ = true;
+
+  /* if thread is not detach */
+  if (pwm_cmd_thread_.joinable()) {
+    pwm_cmd_thread_.join();
+  }
+}
+
+void Rcws::PwmCmdSetRecursive(bool enable) { recursive_flag_ = enable; }
+
+void Rcws::StartPwmCmdThread(std::string csv_path) {
+  if (Rcws::PwmCmdThreadRunning()) return;
+  pwm_cmd_thread_ = std::thread(&Rcws::PwmCmdTask, this, csv_path);
+  pwm_cmd_thread_.detach();
 }
 
 /**

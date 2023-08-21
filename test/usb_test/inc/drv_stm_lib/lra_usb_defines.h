@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Thursday July 6th 2023 5:19:51 pm
+ * Last Modified: Saturday July 8th 2023 8:27:46 am
  *
  * Copyright (c) 2023 None
  *
@@ -219,11 +219,15 @@ namespace lra::usb_lib {
 extern std::string rcws_msg_init;
 extern std::string rcws_msg_eop;
 
+/* command enum */
+typedef enum { RCWS_PWM_MANUAL_MODE, RCWS_PWM_FILE_MODE } RCWS_PWM_CMD_MODE;
+
 /* command map */
 extern std::map<LRA_Device_Index_t, std::string> modify_rcws_device_index_map;
 extern std::map<LRA_Device_Index_t, std::string> reset_rcws_device_index_map;
 extern std::map<LRA_USB_Mode_t, std::string> usb_mode_map;
 extern std::map<LRA_USB_IN_Cmd_t, std::string> usb_in_cmd_type_map;
+extern std::map<int, std::string> pwm_cmd_mode_map;
 extern std::map<LRA_USB_Cmd_Description_t, std::string> usb_basic_cmd_type_map;
 /* RCWS error map */
 extern std::map<LRA_USB_Parse_State_t, std::string> rcws_error_state_map;

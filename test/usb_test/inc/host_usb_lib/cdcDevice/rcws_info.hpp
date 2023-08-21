@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Thursday July 6th 2023 5:29:34 pm
+ * Last Modified: Friday August 18th 2023 1:16:43 pm
  *
  * Copyright (c) 2023 None
  *
@@ -47,6 +47,11 @@ typedef struct {
   PwmInfo y;
   PwmInfo z;
 } RcwsPwmInfo;
+
+typedef struct {
+  float t_ms;
+  RcwsPwmInfo info;
+} RcwsPwmCmd;
 
 using RcwsCmdType = std::variant<
     std::monostate, Command<FuncInfo<void>>, Command<FuncInfo<void, int>>,

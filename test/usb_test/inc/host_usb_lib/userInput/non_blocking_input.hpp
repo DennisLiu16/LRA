@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Thursday May 4th 2023 10:12:31 pm
+ * Last Modified: Friday July 14th 2023 10:51:24 am
  *
  * Copyright (c) 2023 None
  *
@@ -40,7 +40,9 @@ class NonBlockingInput {
 
   ~NonBlockingInput() {
     exit_flag_.store(true);
-    input_thread_.join();
+    if (input_thread_.joinable()) {
+      input_thread_.join();
+    }
   }
 
   // XXX: It's for uncomplete CLI interface

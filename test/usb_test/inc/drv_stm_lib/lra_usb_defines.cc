@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Thursday July 6th 2023 5:28:48 pm
+ * Last Modified: Saturday July 8th 2023 8:28:31 am
  *
  * Copyright (c) 2023 None
  *
@@ -43,6 +43,10 @@ std::map<LRA_USB_Mode_t, std::string> usb_mode_map = {
     {LRA_USB_WAIT_FOR_INIT_MODE, "LRA_USB_WAIT_FOR_INIT_MODE"},
     {LRA_USB_CRTL_MODE, "LRA_USB_CRTL_MODE"},
     {LRA_USB_DATA_MODE, "LRA_USB_DATA_MODE"}};
+
+std::map<int, std::string> pwm_cmd_mode_map = {
+    {RCWS_PWM_MANUAL_MODE, "RCWS_PWM_MANUAL_MODE"},
+    {RCWS_PWM_FILE_MODE, "RCWS_PWM_FILE_MODE"}};
 
 std::map<LRA_USB_IN_Cmd_t, std::string> usb_in_cmd_type_map = {
     {USB_IN_CMD_INIT, "USB_IN_CMD_INIT"},

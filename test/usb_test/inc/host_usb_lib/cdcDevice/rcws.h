@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Thursday July 6th 2023 5:33:04 pm
+ * Last Modified: Monday August 21st 2023 12:05:38 pm
  *
  * Copyright (c) 2023 None
  *
@@ -24,12 +24,14 @@
 #include <bit>
 #include <chrono>
 #include <cstdint>
+#include <queue>
 #include <regex>
 #include <thread>
 
 // rcws libs
 #include <host_usb_lib/logger/logger.h>
 #include <host_usb_lib/parser/rcws_parser.h>
+#include <realtime_lib/realtime_plot.h>
 
 #include <util/range_bound.hpp>
 
@@ -43,6 +45,16 @@ static inline std::basic_string<C> safe_string(const C* input) {
   if (!input) return std::basic_string<C>();
   return std::basic_string<C>(input);
 }
+
+class RCWS_IO_Exception : public std::exception {
+ public:
+  explicit RCWS_IO_Exception(const std::string& message);
+
+  const char* what() const noexcept override;
+
+ private:
+  std::string errorMessage;
+};
 
 class Rcws {
  public:
@@ -79,6 +91,13 @@ class Rcws {
   /* Device IO */
   void DevSend(LRA_USB_OUT_Cmd_t cmd_type, std::vector<uint8_t> data);
 
+  /* PwmCmdThread related */
+  bool PwmCmdThreadRunning();
+  void CleanPwmCmdQueue();
+  void PwmCmdThreadClose();
+  void PwmCmdSetRecursive(bool enable);
+  void StartPwmCmdThread(std::string csv_path);
+
   /* public vars */
 
   std::vector<RcwsCmdType> command_vec_;
@@ -90,6 +109,11 @@ class Rcws {
 
  private:
   bool RangeCheck(const RcwsPwmInfo& info);
+  /* TODO: add try catch */
+  std::vector<uint8_t> ReadRcwsMsg();
+  void PrintRcwsInfo(RcwsInfo& info);
+  void ParseTask();
+  void PwmCmdTask(std::string path);
   /**
    * Convert RcwsPwmInfo to vec
    * example: https://godbolt.org/z/h85f55jGv
@@ -111,11 +135,6 @@ class Rcws {
     }
   }
 
-  /* TODO: add try catch */
-  std::vector<uint8_t> ReadRcwsMsg();
-  void PrintRcwsInfo(RcwsInfo& info);
-  void ParseTask();
-
   /**
    * Ref: https://stackoverflow.com/a/73260280
    * Aborted
@@ -126,18 +145,30 @@ class Rcws {
   uint8_t mode_{LRA_USB_WAIT_FOR_INIT_MODE};
   RcwsInfo rcws_info_{};
   std::vector<RcwsCmdType> registered_cmd_vec_;
-  std::thread parser_thread_;
+
   FILE* acc_file_{nullptr};
   FILE* pwm_file_{nullptr};
   std::string current_acc_file_name_{""};
   std::string current_pwm_file_name_{""};
+
+  /* ReadThread */
+  std::thread parser_thread_;
+  bool read_thread_exit_{false};
+
+  /* PwmCmdThread */
+  std::queue<RcwsPwmCmd> pwm_cmd_q_;
+  std::thread pwm_cmd_thread_;
+  bool pwm_cmd_thread_exit_{false};
+  bool recursive_flag_{false};
 
   /* External class */
   RcwsMsgGenerator msg_generator_;
   RcwsParser parser_;
   LibSerial::SerialPort serial_io_;
 
-  bool read_thread_exit_{false};
+  /* RealTime plot pipe */
+  std::string pipe_name_;
+
   bool reset_stm32_flag_{false};
 };
 
