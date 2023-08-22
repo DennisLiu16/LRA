@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Monday August 21st 2023 12:05:38 pm
+ * Last Modified: Monday August 21st 2023 3:57:05 pm
  *
  * Copyright (c) 2023 None
  *
@@ -31,7 +31,6 @@
 // rcws libs
 #include <host_usb_lib/logger/logger.h>
 #include <host_usb_lib/parser/rcws_parser.h>
-#include <realtime_lib/realtime_plot.h>
 
 #include <util/range_bound.hpp>
 
@@ -65,6 +64,7 @@ class Rcws {
   RcwsInfo ChooseRcws(std::vector<RcwsInfo> info, size_t index);
   void PrintRcwsPwmInfo(const RcwsPwmInfo& info);
   void PrintSelfInfo();
+  RcwsInfo GetRcwsInfo();
   void UserCallExit();
   void PrintAllRcwsInfo(std::vector<RcwsInfo> infos);
   /**
@@ -99,7 +99,7 @@ class Rcws {
   void StartPwmCmdThread(std::string csv_path);
 
   /* public vars */
-
+  std::string pipe_name_;
   std::vector<RcwsCmdType> command_vec_;
   std::string data_path_{""};
 
@@ -165,9 +165,6 @@ class Rcws {
   RcwsMsgGenerator msg_generator_;
   RcwsParser parser_;
   LibSerial::SerialPort serial_io_;
-
-  /* RealTime plot pipe */
-  std::string pipe_name_;
 
   bool reset_stm32_flag_{false};
 };

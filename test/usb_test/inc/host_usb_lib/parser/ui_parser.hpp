@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Saturday July 22nd 2023 9:08:25 am
+ * Last Modified: Monday August 21st 2023 5:39:53 pm
  *
  * Copyright (c) 2023 None
  *
@@ -17,8 +17,11 @@
 
 #pragma once
 
+#include <fcntl.h>
 #include <host_usb_lib/cdcDevice/rcws.h>
 #include <host_usb_lib/logger/logger.h>
+#include <host_usb_lib/realtime/realtime_plot.h>
+#include <unistd.h>
 
 #include <functional>
 #include <string>
@@ -162,7 +165,7 @@ class UIParser {
                   rcws_instance_->UpdateAccFileHandle(acc_tmp);
                   Log(fg(fmt::terminal_color::bright_blue),
                       "open acc file:{}\n", next_acc_full_path);
-                  rcws_instance_->UpdateAccFileName(next_acc_file_name);
+                  rcws_instance_->UpdateAccFileName(next_acc_full_path);
                 }
 
                 if (pwm_tmp != nullptr) {
@@ -172,6 +175,81 @@ class UIParser {
                   rcws_instance_->UpdatePwmFileName(next_pwm_full_path);
                 }
 
+                /* create pipe line for python real time plot */
+                do {
+                  if (!realtime_plot::isRunningInWSL()) {
+                    break;
+                  }
+
+                  /* get correct pipe path */
+                  RcwsInfo target_rcws_info = rcws_instance_->GetRcwsInfo();
+
+                  if (target_rcws_info.path.empty()) {
+                    Log(fg(fmt::terminal_color::bright_red),
+                        "target_rcws_info.path is empty. Fail to get pipe "
+                        "name"
+                        "for python real time plot\n");
+                    break;
+                  }
+
+                  std::string pipe_root_path =
+                      rcws_instance_->data_path_ + "/" + "pipe";
+
+                  /* check path exists or create */
+                  lra::realtime_plot::ensureDirectoryExists(pipe_root_path);
+
+                  std::string pipe_path =
+                      pipe_root_path + "/" + target_rcws_info.serialnum;
+
+                  bool create_pipe_state = realtime_plot::createPipe(pipe_path);
+
+                  if (create_pipe_state == false) {
+                    Log(fg(fmt::terminal_color::bright_red),
+                        "Fail to create given pipe name: {}\n", pipe_path);
+                    break;
+                  }
+
+                  /* create pipe successfully */
+                  Log(fg(fmt::terminal_color::bright_blue),
+                      "Pipe created: {}\n", pipe_path);
+
+                  /* start python program */
+                  /* TODO: change this path */
+                  std::string python_program_path =
+                      "/home/dennis/develop/LRA/test/usb_test/script/"
+                      "realtime_plot.py";
+
+                  /* XXX: debug log */
+                  std::string log_python_root_path =
+                      rcws_instance_->data_path_ + "/" + "pipe_log";
+
+                  lra::realtime_plot::ensureDirectoryExists(
+                      log_python_root_path);
+
+                  std::string log_python_path = log_python_root_path + "/" +
+                                                target_rcws_info.serialnum +
+                                                ".txt";
+
+                  std::string exe_python = "python3 " + python_program_path +
+                                           " " + pipe_path + " >" +
+                                           log_python_path + " 2>&1 &";
+
+                  std::system(exe_python.c_str());
+
+                  /* open and transmit files name */
+                  int pipe_fd = open(pipe_path.c_str(), O_WRONLY);
+                  std::string msg =
+                      next_pwm_full_path + "," + next_acc_full_path;
+                  write(pipe_fd, msg.c_str(), msg.length());
+                  close(pipe_fd);
+
+                  Log(fg(fmt::terminal_color::bright_green),
+                      "Send files information to pipe line.\n");
+
+                  /* assign to rcws instance */
+                  rcws_instance_->pipe_name_ = pipe_path;
+
+                } while (0);
               } else {
                 FILE* acc_file = rcws_instance_->GetAccFileHandle();
                 FILE* pwm_file = rcws_instance_->GetPwmFileHandle();
@@ -194,6 +272,21 @@ class UIParser {
               }
 
               rcws_instance_->DevSwitchMode((LRA_USB_Mode_t)mode);
+
+              if (mode == LRA_USB_CRTL_MODE &&
+                  (!rcws_instance_->pipe_name_.empty())) {
+                /* send eof to python end */
+                int pipe_fd =
+                    open(rcws_instance_->pipe_name_.c_str(), O_WRONLY);
+                std::string stop_signal = "eof";
+                write(pipe_fd, stop_signal.c_str(), stop_signal.length());
+                close(pipe_fd);
+
+                rcws_instance_->pipe_name_ = "";
+
+                Log(fg(fmt::terminal_color::bright_green),
+                    "Send eof to pipe line. Python should be closed.\n");
+              }
 
               break;
             } catch (const std::invalid_argument& e) {

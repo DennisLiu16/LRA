@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Sunday August 20th 2023 5:17:25 pm
+ * Last Modified: Monday August 21st 2023 3:31:28 pm
  *
  * Copyright (c) 2023 None
  *
@@ -141,6 +141,8 @@ void Rcws::PrintRcwsPwmInfo(const RcwsPwmInfo& info) {
 }
 
 void Rcws::PrintSelfInfo() { PrintRcwsInfo(rcws_info_); }
+
+RcwsInfo Rcws::GetRcwsInfo() { return rcws_info_; }
 
 void Rcws::UserCallExit() { read_thread_exit_ = true; }
 

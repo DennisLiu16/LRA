@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Monday August 21st 2023 12:04:46 pm
+ * Last Modified: Monday August 21st 2023 5:21:05 pm
  *
  * Copyright (c) 2023 None
  *
@@ -17,7 +17,10 @@
 
 #pragma once
 
+#include <string>
+
 namespace lra::realtime_plot {
 bool isRunningInWSL();
-std::string createPipe(std::string info);
+bool createPipe(const std::string& pipe_path);
+bool ensureDirectoryExists(const std::string& dirPath);
 };  // namespace lra::realtime_plot

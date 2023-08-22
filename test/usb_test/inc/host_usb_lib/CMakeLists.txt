@@ -18,6 +18,7 @@ target_include_directories(host_usb_lib
         ${CMAKE_CURRENT_SOURCE_DIR}/userInput
         ${CMAKE_CURRENT_SOURCE_DIR}/logger
         ${CMAKE_CURRENT_SOURCE_DIR}/parser  # rcws_parser.h is in this directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/realtime
 )
 
 # add the source file to the library
@@ -25,6 +26,7 @@ target_sources(host_usb_lib
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/parser/rcws_parser.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/cdcDevice/rcws.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/realtime/realtime_plot.cc
 )
 
 # target_include_directories(host_usb_lib PUBLIC 
