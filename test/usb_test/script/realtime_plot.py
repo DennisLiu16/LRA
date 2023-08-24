@@ -175,6 +175,8 @@ def start_plotting(pwm_file, acc_file, plot_stop_event):
     # Use the main thread for GUI
     plot_thread(plot_stop_event)
 
+    print("Main Thread: start_plotting finished")
+
 
 def monitor_pipe(stop_event, plot_stop_event):
     global pwm_file, acc_file
@@ -198,6 +200,8 @@ def monitor_pipe(stop_event, plot_stop_event):
                     pwm_file, acc_file = message.split(',')
                     print(f"Get files information: {pwm_file}\n {acc_file}\n")
                     start_plotting_event.set()  # Signal the main thread to start plotting
+
+    print("Thread: monitor_pipe finished")
 
 
 def ensure_pipe_deleted():
@@ -234,5 +238,6 @@ if __name__ == "__main__":
         if start_plotting_event.is_set():
             start_plotting_event.clear()
             start_plotting(pwm_file, acc_file, plot_stop_event)
+            stop_event.set()
 
     print("Exit realtime_plot.py")
