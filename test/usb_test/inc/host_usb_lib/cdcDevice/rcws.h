@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Monday August 21st 2023 3:57:05 pm
+ * Last Modified: Wednesday August 23rd 2023 6:24:29 pm
  *
  * Copyright (c) 2023 None
  *
@@ -77,6 +77,7 @@ class Rcws {
   FILE* GetPwmFileHandle();
   void UpdateAccFileName(std::string name);
   void UpdatePwmFileName(std::string name);
+  int GetLibSerialFd();
   std::string GetAccFileName();
   std::string GetPwmFileName();
   std::string GetNextFileName(const std::string& path,

@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Monday August 21st 2023 5:39:53 pm
+ * Last Modified: Thursday August 24th 2023 9:07:38 am
  *
  * Copyright (c) 2023 None
  *
@@ -29,6 +29,14 @@
 
 namespace lra::usb_lib {
 // TODO: remove rcws, make it more general
+
+/* TODO: a static function, remove to util */
+static int set_close_on_exec(int fd) {
+  int flags = fcntl(fd, F_GETFD);
+  if (flags == -1) return -1;
+  flags |= FD_CLOEXEC;
+  return fcntl(fd, F_SETFD, flags);
+}
 
 class PathDoesNotExistException : public std::runtime_error {
  public:
@@ -100,7 +108,7 @@ class UIParser {
               rcws_instance_->Open();
             } catch (std::exception& e) {
               Log(fg(fmt::terminal_color::bright_red), "{}\n",
-                  "Try to open RCWS failed\nPlease retry\n");
+                  "Exception: Try to open RCWS failed\nPlease retry\n");
               Log(fg(fmt::terminal_color::bright_red), "{}\n", e.what());
             }
 
@@ -210,7 +218,7 @@ class UIParser {
                   }
 
                   /* create pipe successfully */
-                  Log(fg(fmt::terminal_color::bright_blue),
+                  Log(fg(fmt::terminal_color::bright_green),
                       "Pipe created: {}\n", pipe_path);
 
                   /* start python program */
@@ -234,7 +242,57 @@ class UIParser {
                                            " " + pipe_path + " >" +
                                            log_python_path + " 2>&1 &";
 
-                  std::system(exe_python.c_str());
+                  /* Error: this cause libserial fd inherit to child
+                   * process. Therefore, next serial open will fail due to error
+                   * 'Device or resource busy' */
+
+                  // std::system(exe_python.c_str());
+
+                  /* system going to fork */
+                  Log(fg(fmt::terminal_color::bright_blue),
+                      "Going to fork current process\n");
+
+                  /* fork */
+                  pid_t pid = fork();
+
+                  if (pid == 0) {
+                    /* child process */
+                    close(STDIN_FILENO);
+                    int original_stdout = dup(STDOUT_FILENO);
+
+                    freopen(log_python_path.c_str(), "w", stdout);
+
+                    /* TODO: add conda activate base to exe_python */
+
+                    /* close libserial file descriptor after exec func */
+                    int serial_fd = rcws_instance_->GetLibSerialFd();
+                    int result = set_close_on_exec(serial_fd);
+
+                    if (result < 0) {
+                      Log(fg(fmt::terminal_color::bright_red),
+                          "Set libserial fd close on exec failed!\n");
+                      break;
+                    }
+
+                    /* exe here, never return if exec ok */
+                    execl("/bin/bash", "bash", "-c", exe_python.c_str(),
+                          (char*)NULL);
+
+                    /* if fail */
+                    dup2(original_stdout, STDOUT_FILENO);
+                    close(original_stdout);
+                    Log(fg(fmt::terminal_color::bright_red),
+                        "Execl python realtime plot script failed\n");
+                    _exit(0);
+                  } else if (pid < 0) {
+                    Log(fg(fmt::terminal_color::bright_red),
+                        "PID < 0, unknown error.\n");
+                    break;
+                  } /* else is parent pid */
+
+                  /* TODO: check execl state */
+
+                  /* make sure */
 
                   /* open and transmit files name */
                   int pipe_fd = open(pipe_path.c_str(), O_WRONLY);

@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Monday August 21st 2023 3:31:28 pm
+ * Last Modified: Thursday August 24th 2023 10:01:06 am
  *
  * Copyright (c) 2023 None
  *
@@ -85,6 +85,8 @@ bool Rcws::Open() {
     return false;
   }
 
+  Log("Going to open :{}\n", rcws_info_.path);
+
   serial_io_.Open(rcws_info_.path);
 
   if (!serial_io_.IsOpen()) {
@@ -98,23 +100,30 @@ bool Rcws::Open() {
 }
 
 bool Rcws::Close() {
-  // unset DTR
-  bool isopen = serial_io_.IsOpen();
-  if (!isopen) {
-    Log(fg(fmt::terminal_color::bright_magenta),
-        "Serial Port already closed\n");
-    return false;
-  }
+  bool isopen;
   try {
+    // unset DTR
+    isopen = serial_io_.IsOpen();
+    if (!isopen) {
+      Log(fg(fmt::terminal_color::bright_magenta),
+          "Serial Port already closed\n");
+      return false;
+    }
+
     serial_io_.SetDTR(false);
     serial_io_.Close();
+
+    Log(fg(fmt::terminal_color::bright_green), "Serial port closed\n");
+
+    return !serial_io_.IsOpen();
+
   } catch (const std::exception& e) {
     Log(fg(fmt::terminal_color::bright_red),
-        "Exception: Serial port closed failed\n");
+        "Exception: Serial port closed failed.\nCreate new serial port to "
+        "enable next open.\n");
     serial_io_ = LibSerial::SerialPort();
+    return false;
   }
-  Log(fg(fmt::terminal_color::bright_green), "Serial port closed\n");
-  return !serial_io_.IsOpen();
 }
 
 /**
@@ -261,6 +270,8 @@ void Rcws::UpdateAccFileName(std::string name) {
 void Rcws::UpdatePwmFileName(std::string name) {
   current_pwm_file_name_ = name;
 }
+
+int Rcws::GetLibSerialFd() { return serial_io_.GetFileDescriptor(); }
 
 std::string Rcws::GetAccFileName() { return current_acc_file_name_; }
 

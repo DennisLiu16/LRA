@@ -9,15 +9,19 @@
 # Copyright (c) 2023 None
 ###
 
+import atexit
+from functools import partial
+from matplotlib.animation import FuncAnimation
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
+import matplotlib.pyplot as plt
 import os
 import sys
 import signal
-import numpy as np
-import matplotlib.pyplot as plt
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
-from matplotlib.animation import FuncAnimation
-from functools import partial
+import threading
+import select
+
+start_plotting_event = threading.Event()
 
 if len(sys.argv) < 2:
     print("Pipe name is required as an argument.")
@@ -62,7 +66,20 @@ def plot_data(frame, ax1, ax2):
     ax1.clear()
     ax2.clear()
 
+    # Ensure pwm_data's lengths are consistent
+    min_len_pwm = min(len(pwm_data[key]) for key in pwm_data)
+    for key in pwm_data:
+        while len(pwm_data[key]) > min_len_pwm:
+            pwm_data[key].pop(0)
+
+    # Ensure acc_data's lengths are consistent
+    min_len_acc = min(len(acc_data[key]) for key in acc_data)
+    for key in acc_data:
+        while len(acc_data[key]) > min_len_acc:
+            acc_data[key].pop(0)
+
     # Plot pwm data
+    # make sure len is same
     ax1.plot(pwm_data['t'], pwm_data['x_cmd'], label='X_CMD')
     ax1.plot(pwm_data['t'], pwm_data['y_cmd'], label='Y_CMD')
     ax1.plot(pwm_data['t'], pwm_data['z_cmd'], label='Z_CMD')
@@ -70,6 +87,7 @@ def plot_data(frame, ax1, ax2):
     ax1.set_title('PWM Data')
 
     # Plot acc data
+    # make sure len is same
     ax2.plot(acc_data['t'], acc_data['x'], label='X_ACC')
     ax2.plot(acc_data['t'], acc_data['y'], label='Y_ACC')
     ax2.plot(acc_data['t'], acc_data['z'], label='Z_ACC')
@@ -127,7 +145,38 @@ class FileChangeHandler(FileSystemEventHandler):
                 self.last_read_line = len(lines)
 
 
-def monitor_pipe():
+def handle_close(evt):
+    print("close figure callback")
+
+
+def plot_thread(plot_stop_event):
+    print("Set FuncAnimation")
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 6))
+    ani = FuncAnimation(fig, plot_data, fargs=(ax1, ax2), interval=100)
+    fig.canvas.mpl_connect('close_event', handle_close)
+    plt.show()
+
+    # Block the thread until it's signaled to stop
+    plot_stop_event.wait()
+    plt.close()
+
+    display_all_data(pwm_file, acc_file)
+
+
+def start_plotting(pwm_file, acc_file, plot_stop_event):
+    # Set up watchdog for the files
+    observer = Observer()
+    pwm_handler = FileChangeHandler(pwm_file, read_pwm_line)
+    acc_handler = FileChangeHandler(acc_file, read_acc_line)
+    observer.schedule(pwm_handler, path=pwm_file, recursive=False)
+    observer.schedule(acc_handler, path=acc_file, recursive=False)
+    observer.start()
+
+    # Use the main thread for GUI
+    plot_thread(plot_stop_event)
+
+
+def monitor_pipe(stop_event, plot_stop_event):
     global pwm_file, acc_file
 
     if not os.path.exists(PIPE_NAME):
@@ -135,44 +184,55 @@ def monitor_pipe():
         sys.exit(1)
 
     with open(PIPE_NAME, 'r') as pipe:
-        while True:
-            message = pipe.readline().strip()
-            if message == "eof":
-                print('Get EOF')
-                display_all_data(pwm_file, acc_file)
-                os.unlink(PIPE_NAME)  # Remove the named pipe
-                break
-            else:
-                pwm_file, acc_file = message.split(',')
+        while not stop_event.is_set():
+            # Use select for IO-based triggering
+            ready, _, _ = select.select([pipe], [], [], 1)
+            if ready:
+                message = pipe.readline().strip()
+                if message == "eof":
+                    print('Get EOF')
+                    plot_stop_event.set()  # Signal to stop plotting
+                    os.unlink(PIPE_NAME)  # Remove the named pipe
+                    break
+                elif ',' in message:
+                    pwm_file, acc_file = message.split(',')
+                    print(f"Get files information: {pwm_file}\n {acc_file}\n")
+                    start_plotting_event.set()  # Signal the main thread to start plotting
 
-                print(f"Get files information: {pwm_file}\n {acc_file}\n")
 
-                # Set up watchdog for the files
-                observer = Observer()
-                pwm_handler = FileChangeHandler(pwm_file, read_pwm_line)
-                acc_handler = FileChangeHandler(acc_file, read_acc_line)
-                observer.schedule(pwm_handler, path=pwm_file, recursive=False)
-                observer.schedule(acc_handler, path=acc_file, recursive=False)
-                observer.start()
-
-                # Start the animation for plotting
-                print("Set FuncAnimation")
-                fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 6))
-                ani = FuncAnimation(
-                    fig, plot_data, fargs=(ax1, ax2), interval=500)
-                plt.show()
+def ensure_pipe_deleted():
+    """
+    Ensure the named pipe is deleted.
+    """
+    if os.path.exists(PIPE_NAME):
+        os.unlink(PIPE_NAME)
+        print(f"{PIPE_NAME} deleted.")
 
 
 if __name__ == "__main__":
-    def signal_handler(sig, frame):
-        print("Ctrl+C pressed. Displaying all data...")
-        display_all_data(pwm_file, acc_file)
-        os.unlink(PIPE_NAME)  # Remove the named pipe
-        sys.exit(0)
+    # Register the function to be called on normal termination
+    atexit.register(ensure_pipe_deleted)
+
+    # Handle SIGINT (Ctrl+C) and other common termination signals
+    for sig in [signal.SIGTERM, signal.SIGINT, signal.SIGHUP, signal.SIGQUIT]:
+        # At exit, the atexit-registered function will be called
+        signal.signal(sig, lambda signum, frame: exit(1))
 
     print = partial(print, flush=True)
 
     print("python background start")
 
-    signal.signal(signal.SIGINT, signal_handler)
-    monitor_pipe()
+    # Start the monitor_pipe in a separate thread
+    stop_event = threading.Event()
+    plot_stop_event = threading.Event()
+    monitor_thread = threading.Thread(
+        target=monitor_pipe, args=(stop_event, plot_stop_event))
+    monitor_thread.start()
+
+    # In the main thread, check for the start_plotting_event
+    while not stop_event.is_set():
+        if start_plotting_event.is_set():
+            start_plotting_event.clear()
+            start_plotting(pwm_file, acc_file, plot_stop_event)
+
+    print("Exit realtime_plot.py")

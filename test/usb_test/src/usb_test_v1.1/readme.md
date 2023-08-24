@@ -36,3 +36,10 @@
 2. 插上 USB，讓 STM32 進入 Debug Mode，斷點不能出現(要記得跳掉 HAL_Init)
 3. sudo chmod 666 /dev/ttyACM0 (WSL)
 4. run your porgram
+
+## Python realtime plot on WSL
+
+- 我們撰寫了一個 realtime_plot.py (in script dir)，默認開啟
+- 請先行安裝 realtime_plot.py 的依賴，否則運行時可能會被阻塞 (block)
+- 請參考 [How to set up working X11 forwarding on WSL2 [closed]](https://stackoverflow.com/questions/61110603/how-to-set-up-working-x11-forwarding-on-wsl2)設定 Windows 端的 Server (同台電腦)
+- 理論上會使用 tkinter，所以 WSL 要透過 `sudo apt-get install python3-tk`
