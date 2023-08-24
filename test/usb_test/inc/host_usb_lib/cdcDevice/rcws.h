@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Wednesday August 23rd 2023 6:24:29 pm
+ * Last Modified: Thursday August 24th 2023 12:01:53 pm
  *
  * Copyright (c) 2023 None
  *
@@ -32,7 +32,7 @@
 #include <host_usb_lib/logger/logger.h>
 #include <host_usb_lib/parser/rcws_parser.h>
 
-#include <util/range_bound.hpp>
+#include <util_lib/range_bound.hpp>
 
 #include "msg_generator.hpp"
 #include "rcws_info.hpp"

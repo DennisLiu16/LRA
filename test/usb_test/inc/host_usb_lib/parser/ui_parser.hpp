@@ -4,7 +4,7 @@
  * Author: Dennis Liu
  * Contact: <liusx880630@gmail.com>
  *
- * Last Modified: Thursday August 24th 2023 9:07:38 am
+ * Last Modified: Thursday August 24th 2023 12:01:36 pm
  *
  * Copyright (c) 2023 None
  *
@@ -22,10 +22,11 @@
 #include <host_usb_lib/logger/logger.h>
 #include <host_usb_lib/realtime/realtime_plot.h>
 #include <unistd.h>
+#include <util_lib/block_checker.h>
 
 #include <functional>
 #include <string>
-#include <util/range_bound.hpp>
+#include <util_lib/range_bound.hpp>
 
 namespace lra::usb_lib {
 // TODO: remove rcws, make it more general
@@ -292,7 +293,14 @@ class UIParser {
 
                   /* TODO: check execl state */
 
-                  /* make sure */
+                  /* create block checker */
+                  auto checker = lra::util::BlockChecker(5, [] {
+                    Log(fg(fmt::terminal_color::bright_red),
+                        "Please check current terminal has python env that "
+                        "conform to realtime_plot.py requiring\n");
+                  });
+
+                  checker.start();
 
                   /* open and transmit files name */
                   int pipe_fd = open(pipe_path.c_str(), O_WRONLY);
@@ -300,6 +308,8 @@ class UIParser {
                       next_pwm_full_path + "," + next_acc_full_path;
                   write(pipe_fd, msg.c_str(), msg.length());
                   close(pipe_fd);
+
+                  checker.end();
 
                   Log(fg(fmt::terminal_color::bright_green),
                       "Send files information to pipe line.\n");

@@ -5,7 +5,7 @@ add_subdirectory(logger)
 add_library(host_usb_lib SHARED)
 
 # link to library
-target_link_libraries(host_usb_lib PUBLIC drv_stm_lib lra_usb_logger_lib)
+target_link_libraries(host_usb_lib PUBLIC drv_stm_lib lra_usb_logger_lib rcws_util_lib)
 
 target_include_directories(host_usb_lib
     PUBLIC
