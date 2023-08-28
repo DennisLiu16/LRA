@@ -62,10 +62,7 @@ def read_acc_line(line):
             acc_data[key].pop(0)
 
 
-def plot_data(frame, ax1, ax2):
-    ax1.clear()
-    ax2.clear()
-
+def plot_data(frame, ax1, ax2, line_cmd, line_acc):
     # Ensure pwm_data's lengths are consistent
     min_len_pwm = min(len(pwm_data[key]) for key in pwm_data)
     for key in pwm_data:
@@ -78,21 +75,18 @@ def plot_data(frame, ax1, ax2):
         while len(acc_data[key]) > min_len_acc:
             acc_data[key].pop(0)
 
-    # Plot pwm data
-    # make sure len is same
-    ax1.plot(pwm_data['t'], pwm_data['x_cmd'], label='X_CMD')
-    ax1.plot(pwm_data['t'], pwm_data['y_cmd'], label='Y_CMD')
-    ax1.plot(pwm_data['t'], pwm_data['z_cmd'], label='Z_CMD')
-    ax1.legend()
-    ax1.set_title('PWM Data')
+    line_cmd[0].set_data(pwm_data['t'], pwm_data['x_cmd'])
+    line_cmd[1].set_data(pwm_data['t'], pwm_data['y_cmd'])
+    line_cmd[2].set_data(pwm_data['t'], pwm_data['z_cmd'])
+    ax1.relim()
+    ax1.autoscale_view()
 
-    # Plot acc data
-    # make sure len is same
-    ax2.plot(acc_data['t'], acc_data['x'], label='X_ACC')
-    ax2.plot(acc_data['t'], acc_data['y'], label='Y_ACC')
-    ax2.plot(acc_data['t'], acc_data['z'], label='Z_ACC')
-    ax2.legend()
-    ax2.set_title('ACC Data')
+    line_acc[0].set_data(acc_data['t'], acc_data['x'])
+    line_acc[1].set_data(acc_data['t'], acc_data['y'])
+    line_acc[2].set_data(acc_data['t'], acc_data['z'])
+
+    ax2.relim()
+    ax2.autoscale_view()
 
 
 def display_all_data(pwm_file, acc_file):
@@ -124,8 +118,26 @@ def display_all_data(pwm_file, acc_file):
     # Create a new figure and two subplots
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 6))
 
+    # line init
+    line_cmd = []
+    line_acc = []
+
+    for label in ['X_CMD', 'Y_CMD', 'Z_CMD']:
+        line, = ax1.plot([], [], label=label)
+        line_cmd.append(line)
+    ax1.legend()
+    ax1.set_title('PWM Data')
+
+    # Initializing lines for ACC data
+
+    for label in ['X_ACC', 'Y_ACC', 'Z_ACC']:
+        line, = ax2.plot([], [], label=label)
+        line_acc.append(line)
+    ax2.legend()
+    ax2.set_title('ACC Data')
+
     # Call the updated plot_data function
-    plot_data(None, ax1, ax2)
+    plot_data(None, ax1, ax2, line_cmd, line_acc)
     plt.show()
 
 
@@ -152,7 +164,27 @@ def handle_close(evt):
 def plot_thread(plot_stop_event):
     print("Set FuncAnimation")
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 6))
-    ani = FuncAnimation(fig, plot_data, fargs=(ax1, ax2), interval=100)
+
+    # line init
+    line_cmd = []
+    line_acc = []
+
+    for label in ['X_CMD', 'Y_CMD', 'Z_CMD']:
+        line, = ax1.plot([], [], label=label)
+        line_cmd.append(line)
+    ax1.legend()
+    ax1.set_title('PWM Data')
+
+    # Initializing lines for ACC data
+
+    for label in ['X_ACC', 'Y_ACC', 'Z_ACC']:
+        line, = ax2.plot([], [], label=label)
+        line_acc.append(line)
+    ax2.legend()
+    ax2.set_title('ACC Data')
+
+    ani = FuncAnimation(fig, plot_data, fargs=(
+        ax1, ax2, line_cmd, line_acc), interval=0)
     fig.canvas.mpl_connect('close_event', handle_close)
     plt.show()
 
