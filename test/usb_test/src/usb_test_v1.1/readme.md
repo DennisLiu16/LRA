@@ -43,3 +43,17 @@
 - 請先行安裝 realtime_plot.py 的依賴，否則運行時可能會被阻塞 (block)
 - 請參考 [How to set up working X11 forwarding on WSL2 [closed]](https://stackoverflow.com/questions/61110603/how-to-set-up-working-x11-forwarding-on-wsl2)設定 Windows 端的 Server (同台電腦)
 - 理論上會使用 tkinter，所以 WSL 要透過 `sudo apt-get install python3-tk`
+- 改成使用 pyqt
+
+  ```sh
+  # for ubuntu
+  conda install PyQt
+  pip install pyqtgraph PyQt5
+
+  # 如果缺少再安裝
+  sudo apt-get install libgl1-mesa-glx
+  sudo apt-get install libxcb*
+  sudo apt-get install libxkbcommon-x11-0
+  ```
+
+  如果有 QT 任何問題，可以在 ~/.bashrc 中加入 `export QT_DEBUG_PLUGINS=1` 可以看到詳細錯誤資訊(缺少哪些 lib)
