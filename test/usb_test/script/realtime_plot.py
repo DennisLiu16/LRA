@@ -144,17 +144,23 @@ class RcwsRealtimePlotter:
 
         # PyQt instance
         self.app = pg.mkQApp()
-        self.gridLayout = QtWidgets.QGridLayout()
-        self.win = pg.GraphicsLayoutWidget(
-            show=True, title="Realtime data plotting")
-        self.win.resize(self.width, self.height)
-        self.win.setWindowTitle('Realtime plotting with PyQtGraph')
-        self.win.setBackground('w')
+        self.mainWin = QtWidgets.QMainWindow()
+        self.layoutManager = QtWidgets.QGridLayout(self.mainWin)
+        # glw: GraphicsLayoutWidget
+        # self.glw = pg.GraphicsLayoutWidget(title="Realtime data plotting")
+        # self.glw.resize(self.width, self.height)
+        # self.glw.setWindowTitle('Realtime plotting with PyQtGraph')
 
-        self.pwm_plot = self.win.addPlot(title="PWM Data")
-        self.acc_plot = self.win.addPlot(title="ACC Data")
+        # self.pwm_plot = self.glw.addPlot(title="PWM Data")
+        # self.acc_plot = self.glw.addPlot(title="ACC Data")
 
-        # replace to numpy
+        self.pwm_plot = pg.PlotWidget()
+        self.acc_plot = pg.PlotWidget()
+
+        self.pwm_data_lock = threading.Lock()
+        self.acc_data_lock = threading.Lock()
+
+        # TODO: replace to numpy
         self.pwm_data = {
             't': [],
             'x_cmd': [],
@@ -182,8 +188,8 @@ class RcwsRealtimePlotter:
         }
 
         self.fpsLabel = QtWidgets.QLabel()
-        self.gridLayout.addWidget(self.win, 0, 1)
-        self.gridLayout.addWidget(self.fpsLabel, 0, 2)
+        self.layoutManager.addWidget(self.glw, 0, 1)
+        self.layoutManager.addWidget(self.fpsLabel, 0, 2)
 
         self.lastUpdate = time.perf_counter()
         self.avgFPS = 0.0
@@ -193,24 +199,35 @@ class RcwsRealtimePlotter:
         integer_msec = round(1000 / hz)
         self.timer.start(integer_msec)
 
+        self.mainWin.show()
+
     def update(self):
         # TODO: make sure has same length
 
-        for key in self.pwm_curves:
-            if key != 't':
-                self.pwm_curves[key].setData(
-                    self.pwm_data['t'], self.pwm_data[key])
+        with self.pwm_data_lock:
+            for key in self.pwm_curves:
+                if key != 't':
+                    self.pwm_curves[key].setData(
+                        self.pwm_data['t'], self.pwm_data[key])
 
-        for key in self.acc_curves:
-            if key != 't':
-                self.acc_curves[key].setData(
-                    self.acc_data['t'], self.acc_data[key])
+        with self.acc_data_lock:
+            for key in self.acc_curves:
+                if key != 't':
+                    self.acc_curves[key].setData(
+                        self.acc_data['t'], self.acc_data[key])
 
         # perfermance estimation
         now = time.perf_counter()
         fps = 1.0 / (now - self.lastUpdate)
         self.avgFPS = self.avgFPS * 0.8 + fps * 0.2
         self.fpsLabel.setText(f'fps: {self.avgFPS}')
+
+        # state check (stop, close)
+        if (self.stop_event):
+            # close the glw and label
+            pass
+
+        # pause or not
 
     def run(self):
         print('QT plotter thread is starting')
@@ -223,34 +240,63 @@ class RcwsRealtimePlotter:
 TIME_WINDOW = 2.0
 
 
-def pwm_file_callback(new_line, data):
-    t, x_cmd, x_freq, y_cmd, y_freq, z_cmd, z_freq = map(
-        float, new_line.strip().split(','))
-
-    data['t'].append(t)
-    data['x_cmd'].append(x_cmd)
-    data['x_freq'].append(x_freq)
-    data['y_cmd'].append(y_cmd)
-    data['y_freq'].append(y_freq)
-    data['z_cmd'].append(z_cmd)
-    data['z_freq'].append(z_freq)
-
-    # remove out range data
-    while (data['t'][-1] - data['t'][0]) > TIME_WINDOW:
-        for key in data:
-            data[key].pop(0)
+'''
+new_line: a str, given by FileObserver::_internal_callback
+data: a dict, each key contains an array or numpy array
+'''
 
 
-def acc_file_callback(new_line, data):
-    t, x, y, z = map(float, new_line.strip().split(','))
-    data['t'].append(t)
-    data['x'].append(x)
-    data['y'].append(y)
-    data['z'].append(z)
+def pwm_file_callback(new_line, data, lock):
+    _expected_key_num = len(data)
 
-    while (data['t'][-1] - data['t'][0]) > TIME_WINDOW:
-        for key in data:
-            data[key].pop(0)
+    with lock:
+
+        values = new_line.strip().split(',')
+
+        if len(values) != _expected_key_num:
+            raise ValueError(f"Invalid data length: {new_line}")
+
+        try:
+            t, x_cmd, x_freq, y_cmd, y_freq, z_cmd, z_freq = map(float, values)
+        except ValueError:
+            raise ValueError(f"Invalid data value: {new_line}")
+
+        data['t'].append(t)
+        data['x_cmd'].append(x_cmd)
+        data['x_freq'].append(x_freq)
+        data['y_cmd'].append(y_cmd)
+        data['y_freq'].append(y_freq)
+        data['z_cmd'].append(z_cmd)
+        data['z_freq'].append(z_freq)
+
+        # remove out range data
+        while (data['t'][-1] - data['t'][0]) > TIME_WINDOW:
+            for key in data:
+                data[key].pop(0)
+
+
+def acc_file_callback(new_line, data, lock):
+
+    _expected_key_num = len(data)
+
+    with lock:
+        values = new_line.strip().split(',')
+        if len(values) != _expected_key_num:
+            raise ValueError(f"Invalid data length: {new_line}")
+
+        try:
+            t, x, y, z = map(float, values)
+        except ValueError:
+            raise ValueError(f"Invalid data value: {new_line}")
+
+        data['t'].append(t)
+        data['x'].append(x)
+        data['y'].append(y)
+        data['z'].append(z)
+
+        while (data['t'][-1] - data['t'][0]) > TIME_WINDOW:
+            for key in data:
+                data[key].pop(0)
 
 # main #
 
@@ -274,22 +320,25 @@ if __name__ == "__main__":
     # wait for plotting signal
     pipe_monitor.start_plot_event.wait()
 
-    # data init
+    # realtime plotter create
+    pg.setConfigOption('background', 'w')
+    pg.setConfigOption('foreground', 'k')
+
     realtime_plotter = RcwsRealtimePlotter(
         pipe_monitor.stop_plot_event, (1200, 900), hz=60)
-    max_freq = 100
 
     # create file observers
+    max_freq = 100
     pwm_file_observer = FileObserver(
-        pipe_monitor.pwm_file_name, max_freq, pwm_file_callback, (realtime_plotter.pwm_data,))
+        pipe_monitor.pwm_file_name, max_freq, pwm_file_callback, (realtime_plotter.pwm_data, realtime_plotter.pwm_data_lock))
 
     acc_file_observer = FileObserver(
-        pipe_monitor.acc_file_name, max_freq, acc_file_callback, (realtime_plotter.acc_data,))
+        pipe_monitor.acc_file_name, max_freq, acc_file_callback, (realtime_plotter.acc_data, realtime_plotter.acc_data_lock))
 
     pwm_file_observer.start()
     acc_file_observer.start()
 
-    # create pyQt plot
+    # realtime_plotter start (blocking)
     realtime_plotter.run()
 
     # close file observer
