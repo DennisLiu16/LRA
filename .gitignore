@@ -1,5 +1,4 @@
 # ignore folder
-data
+data/rcws/*.txt
 build
-test/tmp/*
-
+test/usb_test/data/log

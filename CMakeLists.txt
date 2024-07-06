@@ -1,6 +1,11 @@
 # The first target makefile of LRA project
 cmake_minimum_required(VERSION 3.22)
 
+## Data path macro
+set(RCWS_LRA_ROOT_PATH "${CMAKE_SOURCE_DIR}")
+set(RCWS_LRA_DATA_PATH "${CMAKE_SOURCE_DIR}/data/rcws")
+set(RCWS_LRA_SCRIPT_PATH "${CMAKE_SOURCE_DIR}/test/usb_test/script")
+
 # option define
 ## USE_LOG_SYSTEM
 option(USE_LOG_SYSTEM

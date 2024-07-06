@@ -69,7 +69,7 @@ bool Rcws::Open() {
     Log(fg(fmt::terminal_color::bright_magenta),
         "Warning: Rcws just be reset. Please wait for 10 seconds to "
         "reconnect\n");
-    serial_io_ = LibSerial::SerialPort();
+    // serial_io_ = LibSerial::SerialPort();
     reset_stm32_flag_ = false;
     std::this_thread::sleep_for(std::chrono::seconds(10));
   }
@@ -121,7 +121,7 @@ bool Rcws::Close() {
     Log(fg(fmt::terminal_color::bright_red),
         "Exception: Serial port closed failed.\nCreate new serial port to "
         "enable next open.\n");
-    serial_io_ = LibSerial::SerialPort();
+    // serial_io_ = LibSerial::SerialPort();
     return false;
   }
 }

@@ -16,3 +16,6 @@ set_target_properties(lra_usb_util_test_v1.1
 PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
+
+target_compile_definitions(lra_usb_util_test_v1.1 PRIVATE RCWS_LRA_DATA_PATH=\"${RCWS_LRA_DATA_PATH}\")
+target_compile_definitions(lra_usb_util_test_v1.1 PRIVATE RCWS_LRA_ROOT_PATH=\"${RCWS_LRA_ROOT_PATH}\")

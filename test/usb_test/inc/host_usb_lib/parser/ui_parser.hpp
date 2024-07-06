@@ -24,9 +24,11 @@
 #include <unistd.h>
 #include <util_lib/block_checker.h>
 
+#include <filesystem>
 #include <functional>
 #include <string>
 #include <util_lib/range_bound.hpp>
+namespace fs = std::filesystem;
 
 namespace lra::usb_lib {
 // TODO: remove rcws, make it more general
@@ -155,6 +157,22 @@ class UIParser {
               }
 
               if (mode == LRA_USB_DATA_MODE) {
+                /* check data_path_ exists */
+                if (!fs::exists(rcws_instance_->data_path_)) {
+                  Log(fg(fmt::terminal_color::bright_green),
+                      "Directory: {} not exists, creating!\n",
+                      rcws_instance_->data_path_);
+                  if (!fs::create_directories(rcws_instance_->data_path_)) {
+                    Log(fg(fmt::terminal_color::bright_red),
+                        "Create unexisted directory: {} failed!\n",
+                        rcws_instance_->data_path_);
+                    return;
+                  }
+                  Log(fg(fmt::terminal_color::bright_green),
+                      "Create unexisted directory: {} ok!\n",
+                      rcws_instance_->data_path_);
+                }
+
                 std::string next_acc_file_name =
                     rcws_instance_->GetNextFileName(rcws_instance_->data_path_,
                                                     "acc");
@@ -186,7 +204,10 @@ class UIParser {
 
                 /* create pipe line for python real time plot */
                 do {
+                  /*  */
                   if (!realtime_plot::isRunningInWSL()) {
+                    Log(fg(fmt::terminal_color::bright_blue),
+                        "Not running in WSL, python script is disabled!\n");
                     break;
                   }
 
@@ -224,9 +245,11 @@ class UIParser {
 
                   /* start python program */
                   /* TODO: change this path */
-                  std::string python_program_path =
-                      "/home/dennis/develop/LRA/test/usb_test/script/"
-                      "realtime_plot.py";
+                  const std::string script_filename = "realtime_plot.py";
+                  std::filesystem::path script_path =
+                      std::filesystem::path(RCWS_LRA_SCRIPT_PATH) /
+                      script_filename;
+                  std::string python_program_path = script_path.string();
 
                   /* XXX: debug log */
                   std::string log_python_root_path =
@@ -276,8 +299,11 @@ class UIParser {
                     }
 
                     /* exe here, never return if exec ok */
-                    execl("/bin/bash", "bash", "-c", exe_python.c_str(),
-                          (char*)NULL);
+                    /* XXX: enable this if you want to see python script running */
+
+                    // execl("/bin/bash", "bash", "-c", exe_python.c_str(),
+                    //       (char*)NULL);
+                    break; // disable this if exe_python exec
 
                     /* if fail */
                     dup2(original_stdout, STDOUT_FILENO);
@@ -450,7 +476,16 @@ class UIParser {
                       rcws_instance_->data_path_ + "/pwm_cmd_file";
 
                   if (!std::filesystem::exists(path)) {
-                    throw PathDoesNotExistException(path);
+                    /* create data/rcws/pwm_cmd_file */
+                    if (!fs::create_directories(path)) {
+                      Log(fg(fmt::terminal_color::bright_red),
+                          "Create unexisted directory: {} failed!\n",
+                          rcws_instance_->data_path_);
+                      return;
+                    }
+                    Log(fg(fmt::terminal_color::bright_green),
+                        "Create unexisted directory: {} ok!\n", path);
+                    // throw PathDoesNotExistException(path);
                   }
 
                   /* list all csv */

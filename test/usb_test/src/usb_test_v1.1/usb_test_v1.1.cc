@@ -33,8 +33,17 @@ int main(int argc, char* argv[]) {
   // add nonblocking user input
   NonBlockingInput non_blocking_input;
 
+#ifndef RCWS_LRA_DATA_PATH
+#error "RCWS_LRA_DATA_PATH is not defined"
+#endif
+
+  std::string data_path = std::string(RCWS_LRA_DATA_PATH);
+
+  Log(fg(fmt::terminal_color::bright_blue), "RCWS data path is: {}\n",
+      data_path);
+
   auto rcws_instance = lra::usb_lib::Rcws();
-  rcws_instance.data_path_ = "/home/dennis/develop/LRA/data/rcws";
+  rcws_instance.data_path_ = data_path;  // defined in top CMakeLists.txt
 
   // auto rcws_list = rcws_instance.FindAllRcws();
 
@@ -73,8 +82,7 @@ int main(int argc, char* argv[]) {
     std::filesystem::path current_bin_path =
         std::filesystem::absolute(std::filesystem::path(argv[0])).parent_path();
 
-    std::filesystem::path root_path =
-        current_bin_path.parent_path().parent_path();
+    std::filesystem::path root_path = RCWS_LRA_ROOT_PATH;
     std::filesystem::path data_dir = root_path / "test/usb_test/data";
 
     std::filesystem::path csv_path = data_dir / "f10000.csv";

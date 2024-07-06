@@ -36,3 +36,4 @@ target_sources(host_usb_lib
 # )
 
 target_link_libraries(host_usb_lib INTERFACE spdlog serial usb-1.0 udev)
+target_compile_definitions(host_usb_lib PUBLIC RCWS_LRA_SCRIPT_PATH=\"${RCWS_LRA_SCRIPT_PATH}\")
