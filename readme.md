@@ -25,20 +25,29 @@
 ## Dependency
 
 ```sh
-# g++10 or 11
 sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 sudo apt install -y g++-10
-
-# boost
 sudo apt-get install libboost-all-dev
+sudo apt-get install libfftw3-dev
+sudo apt install libserialport-dev
+sudo apt-get install libudev-dev
+sudo apt-get install libusb-1.0-0-dev
 ```
 
 ## Installation
 
 ```sh
 git clone --recurse-submodules -j8 https://github.com/DennisLiu16/LRA.git
+cd LRA
+git checkout usb_test_wsl
 ```
 
-## USB_Test
+## Build
+```sh
+mkdir build
+cd build
+cmake .. && make
+```
 
-1. v1.1.1: LRA trigger
+## Which bin you should run
+./build/bin/lra_usb_util_test_v1.1
