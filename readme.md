@@ -29,7 +29,7 @@ sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 sudo apt install -y g++-10
 sudo apt-get install libboost-all-dev
 sudo apt-get install libfftw3-dev
-sudo apt install libserialport-dev
+sudo apt install libserial-dev
 sudo apt-get install libudev-dev
 sudo apt-get install libusb-1.0-0-dev
 ```
@@ -48,6 +48,18 @@ mkdir build
 cd build
 cmake .. && make
 ```
+
+## Trouble Shooting
+
+- Encounter `Bad file descriptor` when opening RCWS
+
+    If you encounter `Bad file descriptor` when opening ACM devices, please check following instructions. The issue is caused by tty permissions. Please check if the current user is in the `dialout` group. If not, execute:
+
+    ```bash
+    sudo usermod -aG dialout <username>
+    ```
+    
+    and then log out and log back in or restart the system. This will permanently resolve the issue. As a temporary workaround, you can run the command with `sudo` to elevate permissions.
 
 ## Which bin you should run
 ./build/bin/lra_usb_util_test_v1.1

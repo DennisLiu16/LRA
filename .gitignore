@@ -1,4 +1,6 @@
 # ignore folder
 data/rcws/*.txt
+data/rcws/pipe
+data/rcws/pipe_log
 build
 test/usb_test/data/log
